@@ -9,9 +9,15 @@ if ! command -v wasm-pack &> /dev/null; then
 fi
 
 # Build the WebAssembly module
-wasm-pack build --target web --out-dir www/pkg
+wasm-pack build --target web --out-dir pkg
 
-echo "Build complete! WebAssembly module is in www/pkg/"
-echo "To serve the website locally, run:"
-echo "  cd www && python3 -m http.server 8080"
+# Create symlink for React app if it doesn't exist
+if [ ! -e www/src/wasm ]; then
+    echo "Creating symlink for React app..."
+    ln -s ../../pkg www/src/wasm
+fi
+
+echo "Build complete! WebAssembly module is in pkg/"
+echo "To serve the React website locally, run:"
+echo "  cd www && npm run dev"
 echo "Then open http://localhost:8080 in your browser"
