@@ -28,12 +28,12 @@ jobs:
           targets: wasm32-unknown-unknown
 
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        uses: jetli/wasm-pack-action@v0.4.0
 
       - name: Build WebAssembly module
         run: |
           cd asn1_web_decoder
-          wasm-pack build --target web --out-dir www/pkg
+          wasm-pack build --release --target web --out-dir www/pkg
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
