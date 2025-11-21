@@ -10,6 +10,8 @@ pub struct Asn1Node {
     pub length: usize,
     pub value: Option<String>,
     pub children: Vec<Asn1Node>,
+    pub byte_offset: usize,
+    pub byte_length: usize,
 }
 
 #[wasm_bindgen]
@@ -17,6 +19,20 @@ pub fn decode_pem_to_json(pem_input: &str) -> Result<String, JsValue> {
     match decode_pem_internal(pem_input) {
         Ok(json) => Ok(json),
         Err(e) => Err(JsValue::from_str(&format!("Error: {}", e))),
+    }
+}
+
+#[wasm_bindgen]
+pub fn pem_to_hex(pem_input: &str) -> Result<String, JsValue> {
+    match pem::parse(pem_input) {
+        Ok(pem) => {
+            let hex_string = pem.contents()
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<String>();
+            Ok(hex_string)
+        }
+        Err(e) => Err(JsValue::from_str(&format!("Error parsing PEM: {}", e))),
     }
 }
 
@@ -31,14 +47,16 @@ fn decode_pem_internal(pem_input: &str) -> Result<String, Box<dyn std::error::Er
         length: pem.contents().len(),
         value: None,
         children: Vec::new(),
+        byte_offset: 0,
+        byte_length: pem.contents().len(),
     };
     
-    decode_der_recursive(pem.contents(), &mut root.children)?;
+    decode_der_recursive(pem.contents(), &mut root.children, 0)?;
     
     Ok(serde_json::to_string_pretty(&root)?)
 }
 
-fn decode_der_recursive(data: &[u8], nodes: &mut Vec<Asn1Node>) -> Result<(), Box<dyn std::error::Error>> {
+fn decode_der_recursive(data: &[u8], nodes: &mut Vec<Asn1Node>, base_offset: usize) -> Result<(), Box<dyn std::error::Error>> {
     let mut pos = 0;
     
     while pos < data.len() {
@@ -46,6 +64,7 @@ fn decode_der_recursive(data: &[u8], nodes: &mut Vec<Asn1Node>) -> Result<(), Bo
             break;
         }
         
+        let node_start = pos;
         let tag = data[pos];
         pos += 1;
         
@@ -81,6 +100,7 @@ fn decode_der_recursive(data: &[u8], nodes: &mut Vec<Asn1Node>) -> Result<(), Bo
         };
         
         let content = &data[pos..pos + length];
+        let total_length = 1 + length_bytes + length; // tag + length bytes + content
         
         let mut node = Asn1Node {
             label,
@@ -90,10 +110,12 @@ fn decode_der_recursive(data: &[u8], nodes: &mut Vec<Asn1Node>) -> Result<(), Bo
             length,
             value: None,
             children: Vec::new(),
+            byte_offset: base_offset + node_start,
+            byte_length: total_length,
         };
         
         if is_constructed {
-            decode_der_recursive(content, &mut node.children)?;
+            decode_der_recursive(content, &mut node.children, base_offset + pos)?;
         } else {
             node.value = Some(decode_value(tag_number, content));
         }
