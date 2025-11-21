@@ -2,7 +2,7 @@
 
 A collection of Rust-based tools for decoding and analyzing ASN.1 (Abstract Syntax Notation One) structures in PEM format.
 
-Try the online version: [asn1_parser](https://knopkem.github.io/asn1_parser/)
+Try the online version: [ASN1 PEM Decoder](https://knopkem.github.io/asn1_parser/)
 
 ## Projects
 
