@@ -23,7 +23,23 @@ The ASN.1 Web Decoder is a static website that can be deployed to any static hos
 
 ### 1. GitHub Pages
 
-**Method 1: Using gh-pages branch**
+**Method 1: Automated via GitHub Actions (Recommended)**
+
+This repository includes a GitHub Actions workflow that automatically builds and deploys:
+
+1. Enable GitHub Pages in your repository:
+   - Go to Settings → Pages
+   - Under "Build and deployment", select "GitHub Actions" as the source
+
+2. The workflow (`.github/workflows/deploy-pages.yml`) will:
+   - Trigger on pushes to `main` branch
+   - Install Rust and wasm-pack
+   - Build the WebAssembly module
+   - Deploy to GitHub Pages
+
+3. Access your site at `https://<username>.github.io/<repository>/`
+
+**Method 2: Manual deployment using gh-pages branch**
 ```bash
 # From the asn1_web_decoder directory
 cd www
@@ -35,7 +51,7 @@ git remote add origin https://github.com/USERNAME/REPO.git
 git push -u origin gh-pages
 ```
 
-**Method 2: Using docs/ folder**
+**Method 3: Using docs/ folder**
 ```bash
 # From the repository root
 cp -r asn1_web_decoder/www ./docs

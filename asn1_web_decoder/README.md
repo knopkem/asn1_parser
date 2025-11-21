@@ -94,6 +94,22 @@ The `www/` directory (after building) contains a complete static website that ca
 
 Simply copy the entire `www/` directory to your hosting service.
 
+### GitHub Pages (Automated)
+
+This repository includes a GitHub Actions workflow that automatically builds and deploys the web application to GitHub Pages:
+
+1. The workflow is triggered on pushes to the `main` branch
+2. It builds the WebAssembly module from Rust source
+3. Deploys the `www/` directory to GitHub Pages
+
+To enable GitHub Pages for your fork:
+1. Go to your repository Settings → Pages
+2. Under "Build and deployment", select "GitHub Actions" as the source
+3. Push to the `main` branch or manually trigger the workflow
+4. Your site will be available at `https://<username>.github.io/<repository>/`
+
+See `.github/workflows/deploy-pages.yml` for the workflow configuration.
+
 ## Development
 
 To modify the Rust decoder:
