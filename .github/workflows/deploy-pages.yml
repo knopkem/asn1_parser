@@ -33,12 +33,27 @@ jobs:
       - name: Build WebAssembly module
         run: |
           cd asn1_web_decoder
-          wasm-pack build --release --target web --out-dir www/pkg
+          wasm-pack build --release --target web --out-dir www/src/wasm
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd asn1_web_decoder/www
+          npm ci
+
+      - name: Build React application
+        run: |
+          cd asn1_web_decoder/www
+          npm run build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'asn1_web_decoder/www'
+          path: 'asn1_web_decoder/www/dist'
 
   deploy:
     environment:

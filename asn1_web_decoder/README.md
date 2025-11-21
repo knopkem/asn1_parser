@@ -73,34 +73,52 @@ python3 -m http.server 8080
 The core decoder is written in Rust and compiled to WebAssembly:
 - Parses PEM format
 - Decodes DER-encoded ASN.1 structures
-- Outputs JSON tree structure
+- Outputs JSON tree structure with byte offsets
 - Uses `wasm-bindgen` for JavaScript interop
+- Provides `pem_to_hex()` function for hex view
 
-### Web Interface (`www/`)
+### React Application (`www/`)
 
-- `index.html`: Main page structure
-- `styles.css`: Modern, responsive styling
-- `app.js`: JavaScript application logic and tree rendering
-- `pkg/`: Generated WebAssembly module and bindings (created during build)
+Modern React 18 application with Material-UI:
+- **Components**:
+  - `App.jsx`: Main application with state management
+  - `InputDialog.jsx`: Modal dialog for PEM input
+  - `OutputSection.jsx`: Tree view panel
+  - `HexViewSection.jsx`: Hex dump panel
+  - `TreeNode.jsx`: Recursive tree node component
+  - `HexView.jsx`: Color-coded hex display with auto-scroll
+- **Build System**: Vite for fast development and optimized production builds
+- **Styling**: Material-UI components with custom theme
+- **State Management**: React hooks (useState, useEffect, useRef)
+- **WASM Integration**: Direct import of generated bindings
+
+### Build Output
+
+After building, `www/dist/` contains:
+- Optimized JavaScript bundle (~379KB, ~120KB gzipped)
+- WebAssembly module (~95KB)
+- HTML and assets
+- Ready for static hosting
 
 ## Deployment
 
-The `www/` directory (after building) contains a complete static website that can be deployed to:
-- GitHub Pages
+The `www/dist/` directory (after building) contains a complete static website that can be deployed to:
+- GitHub Pages (automated via Actions)
 - Netlify
 - Vercel
 - Any static hosting service
 - Local HTTP server
 
-Simply copy the entire `www/` directory to your hosting service.
+Simply copy the entire `www/dist/` directory to your hosting service.
 
 ### GitHub Pages (Automated)
 
-This repository includes a GitHub Actions workflow that automatically builds and deploys the web application to GitHub Pages:
+This repository includes a GitHub Actions workflow that automatically builds and deploys to GitHub Pages:
 
 1. The workflow is triggered on pushes to the `main` branch
 2. It builds the WebAssembly module from Rust source
-3. Deploys the `www/` directory to GitHub Pages
+3. Installs Node.js dependencies and builds the React app
+4. Deploys the `www/dist/` directory to GitHub Pages
 
 To enable GitHub Pages for your fork:
 1. Go to your repository Settings → Pages
@@ -112,14 +130,25 @@ See `.github/workflows/deploy-pages.yml` for the workflow configuration.
 
 ## Development
 
-To modify the Rust decoder:
-1. Edit `src/lib.rs`
-2. Run `./build.sh`
-3. Refresh your browser
+### Modifying the Rust Decoder
 
-To modify the UI:
-1. Edit files in `www/` (except `www/pkg/`)
-2. Refresh your browser (no rebuild needed)
+1. Edit `src/lib.rs`
+2. Rebuild WASM: `wasm-pack build --release --target web --out-dir www/src/wasm`
+3. Restart dev server: `cd www && npm run dev`
+
+### Modifying the React UI
+
+1. Edit files in `www/src/`
+2. Changes auto-reload with Vite HMR
+3. No rebuild needed during development
+
+### Production Testing
+
+```bash
+cd www
+npm run build
+npm run preview
+```
 
 ## Example Input
 
@@ -140,6 +169,28 @@ aWRnaXRzIFB0eSBMdGQwHhcNMjMwMTAxMDAwMDAwWhcNMjQwMTAxMDAwMDAwWjBF
 - `serde`: Serialization framework
 - `serde_json`: JSON serialization
 - `web-sys`: Web API bindings
+
+### JavaScript/React
+- `react` & `react-dom`: UI framework
+- `@mui/material`: Material Design components
+- `@mui/icons-material`: Material Design icons
+- `vite`: Build tool and dev server
+
+## Documentation
+
+Comprehensive documentation is available in the `www/` directory:
+
+- `README.md`: Quick start guide
+- `QUICKSTART.md`: Step-by-step tutorial
+- `USAGE_GUIDE.md`: Detailed usage instructions
+- `HEX_VIEW_FEATURE.md`: Hex view documentation
+- `HEX_COLOR_CODING.md`: Color coding and auto-scroll
+- `COMPACT_VIEW.md`: Compact tree view details
+- `FULLSCREEN_UI.md`: Full-screen layout design
+- `FINAL_OPTIMIZATIONS.md`: Latest optimizations
+- `UI_OVERVIEW.md`: Complete UI reference
+- `MUI_INTEGRATION.md`: Material-UI integration
+- `WHATS_NEW.md`: Feature changelog
 
 ## License
 

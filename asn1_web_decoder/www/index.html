@@ -4,36 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ASN.1 PEM Decoder</title>
-    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>ASN.1 PEM Decoder</h1>
-            <p>Paste your PEM-formatted ASN.1 structure below to decode and visualize it</p>
-        </header>
-
-        <div class="content">
-            <div class="input-section">
-                <h2>Input</h2>
-                <textarea id="pemInput" placeholder="-----BEGIN CERTIFICATE-----
-MIIDXTCCAkWgAwIBAgIJAKVpbF9K...
------END CERTIFICATE-----"></textarea>
-                <div class="button-group">
-                    <button id="decodeBtn" class="btn-primary">Decode</button>
-                    <button id="clearBtn" class="btn-secondary">Clear</button>
-                    <button id="sampleBtn" class="btn-secondary">Load Sample</button>
-                </div>
-                <div id="error" class="error"></div>
-            </div>
-
-            <div class="output-section">
-                <h2>Decoded Structure</h2>
-                <div id="tree" class="tree-view"></div>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="app.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
