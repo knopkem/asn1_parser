@@ -32,6 +32,7 @@ A WebAssembly-powered web interface for decoding ASN.1 structures with an intera
 - Beautiful, responsive UI
 - Color-coded badges for tag classes and types
 - Sample data included for testing
+- **Automatically deployed to GitHub Pages**
 
 **Quick Start:**
 ```bash
@@ -41,6 +42,9 @@ cd www
 ./serve.sh
 # Open http://localhost:8080
 ```
+
+**GitHub Pages:**
+The web application is automatically built and deployed to GitHub Pages via GitHub Actions. See `.github/workflows/deploy-pages.yml` for details.
 
 [View Web App Documentation →](./asn1_web_decoder)
 
