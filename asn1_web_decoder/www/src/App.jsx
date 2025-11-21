@@ -6,6 +6,7 @@ import InputDialog from './components/InputDialog'
 import OutputSection from './components/OutputSection'
 import HexViewSection from './components/HexViewSection'
 import init, { decode_pem_to_json, pem_to_hex } from './wasm/asn1_web_decoder.js'
+import wasmUrl from './wasm/asn1_web_decoder_bg.wasm?url'
 
 const SAMPLE_CERT = `-----BEGIN CERTIFICATE-----
 MIIDxzCCAq+gAwIBAgIUQ0cPkEzTGcHIPhQzgECtTTYVHSgwDQYJKoZIhvcNAQEL
@@ -53,7 +54,15 @@ function App() {
   const [dialogOpen, setDialogOpen] = useState(true)
 
   useEffect(() => {
-    init().then(() => setWasmReady(true))
+    init(wasmUrl)
+      .then(() => {
+        console.log('WASM module initialized successfully')
+        setWasmReady(true)
+      })
+      .catch(err => {
+        console.error('Failed to initialize WASM module:', err)
+        setError(`Failed to initialize WASM module: ${err.message || err}`)
+      })
   }, [])
 
   const handleDecode = async () => {
