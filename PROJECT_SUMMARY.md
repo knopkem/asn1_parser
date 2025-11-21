@@ -2,21 +2,20 @@
 
 ## What Was Created
 
-A complete Rust-based ASN.1 decoder solution with both CLI and web interfaces.
+A complete Rust-based ASN.1 decoder solution with a modern React web interface powered by WebAssembly.
 
 ## Directory Structure
 
-\`\`\`
+```
 asn1_decoder/
 ├── README.md                      # Main project overview
 ├── PROJECT_SUMMARY.md             # This file
 │
-├── asn1_decoder/                  # CLI Tool (already existed)
-│   ├── Cargo.toml
-│   └── src/
-│       └── main.rs
+├── .github/
+│   └── workflows/
+│       └── deploy-pages.yml       # GitHub Pages deployment automation
 │
-└── asn1_web_decoder/              # NEW: Web Application
+└── asn1_web_decoder/              # Web Application
     ├── Cargo.toml                 # Rust dependencies + WASM config
     ├── build.sh                   # Build script (creates WASM)
     ├── .gitignore                 # Git ignore rules
@@ -24,20 +23,30 @@ asn1_decoder/
     ├── QUICKSTART.md              # Quick setup guide
     ├── DEMO.md                    # Usage examples
     ├── DEPLOYMENT.md              # Hosting instructions
+    ├── CHANGELOG.md               # Version history
+    ├── REACT_MIGRATION.md         # React migration notes
     │
     ├── src/
     │   └── lib.rs                 # Rust library (compiles to WASM)
     │
-    └── www/                       # Static website
-        ├── index.html             # Main page
-        ├── styles.css             # UI styling
-        ├── app.js                 # JavaScript application
-        ├── serve.sh               # Local server script
-        └── pkg/                   # Generated WASM (after build)
-            ├── asn1_web_decoder_bg.wasm
-            ├── asn1_web_decoder.js
-            └── asn1_web_decoder.d.ts
-\`\`\`
+    ├── pkg/                       # Generated WASM (after build)
+    │   ├── asn1_web_decoder_bg.wasm
+    │   ├── asn1_web_decoder.js
+    │   └── asn1_web_decoder.d.ts
+    │
+    └── www/                       # React Application
+        ├── index.html             # HTML entry
+        ├── package.json           # Node dependencies
+        ├── vite.config.js         # Vite configuration
+        ├── src/
+        │   ├── main.jsx           # React entry
+        │   ├── App.jsx            # Main component
+        │   ├── index.css          # Global styles
+        │   ├── components/        # React components
+        │   └── wasm/              # Symlink to ../../pkg
+        ├── dist/                  # Production build output
+        └── [documentation files]  # Various .md files
+```
 
 ## Technology Stack
 
@@ -52,22 +61,26 @@ asn1_decoder/
   - web-sys: Browser API bindings
 
 ### Frontend
-- **HTML5**: Semantic markup
-- **CSS3**: Modern styling with Grid/Flexbox
-- **JavaScript ES6+**: Vanilla JS, no frameworks
+- **React 18**: Modern component-based UI framework
+- **Material-UI (MUI) 5**: Professional design system
+- **Vite 5**: Fast build tool and dev server
+- **Emotion**: CSS-in-JS styling
 - **WebAssembly**: Fast ASN.1 decoding
 
 ## Key Features
 
 ### Web Application
-1. **Interactive Tree View**: Expand/collapse nodes
-2. **Real-time Decoding**: Instant results in browser
-3. **Color-coded Badges**: Visual distinction of tag types
-4. **Sample Data**: Built-in example for testing
-5. **Keyboard Shortcut**: Ctrl+Enter to decode
-6. **Responsive Design**: Works on desktop and mobile
-7. **No Server Required**: Pure static website
-8. **Privacy-First**: All processing in browser
+1. **Full-Screen Layout**: Optimized split-panel interface
+2. **Interactive Tree View**: Expand/collapse nodes to explore structures
+3. **Hex Viewer**: Color-coded hex dump with byte offset tracking
+4. **Real-time Decoding**: Instant results in browser
+5. **Hover Highlighting**: Interactive connection between tree and hex
+6. **Floating Action Button**: Quick access to input dialog
+7. **Sample Data**: Built-in example for testing
+8. **Responsive Design**: Works on desktop and mobile
+9. **No Server Required**: Pure static website
+10. **Privacy-First**: All processing in browser
+11. **Material Design**: Professional, polished UI
 
 ### ASN.1 Support
 - Universal tags (BOOLEAN, INTEGER, SEQUENCE, etc.)
@@ -81,15 +94,16 @@ asn1_decoder/
 
 ## How It Works
 
-1. **User Input**: Paste PEM-formatted ASN.1 data
+1. **User Input**: Click FAB and paste PEM-formatted ASN.1 data
 2. **PEM Parsing**: Extract base64 content and decode to DER
 3. **DER Decoding**: Parse binary ASN.1 structure recursively
-4. **JSON Output**: Convert to structured JSON tree
-5. **Rendering**: JavaScript creates interactive tree view
+4. **JSON Output**: Convert to structured JSON tree with byte offsets
+5. **Rendering**: React components create interactive tree view
+6. **Hex View**: Display color-coded hex dump with offsets
 
 ## Build Process
 
-\`\`\`bash
+```bash
 Rust Source Code (lib.rs)
     ↓
 wasm-pack build
@@ -100,27 +114,40 @@ JavaScript Bindings (.js)
     +
 TypeScript Definitions (.d.ts)
     ↓
-www/pkg/ directory
+pkg/ directory (symlinked to www/src/wasm)
     ↓
-Load in index.html via app.js
+React Application (www/src/)
+    ↓
+Vite build (npm run build)
+    ↓
+Optimized Static Site (www/dist/)
     ↓
 Interactive Web Application
-\`\`\`
+```
 
 ## Getting Started
 
-\`\`\`bash
-# Build the web application
+```bash
+# Build the WebAssembly module
 cd asn1_web_decoder
 ./build.sh
 
-# Start local server
+# Install dependencies and start dev server
 cd www
-./serve.sh
+npm install
+npm run dev
 
 # Open browser
 open http://localhost:8080
-\`\`\`
+```
+
+## Production Build
+
+```bash
+cd asn1_web_decoder/www
+npm run build
+# Output in www/dist/
+```
 
 ## Use Cases
 
@@ -133,10 +160,10 @@ open http://localhost:8080
 ## Deployment Ready
 
 The web application can be deployed to:
-- GitHub Pages
+- **GitHub Pages** (automated via Actions)
 - Netlify
 - Vercel
-- AWS S3
+- AWS S3 + CloudFront
 - Firebase Hosting
 - Cloudflare Pages
 - Any static hosting service
@@ -145,11 +172,10 @@ See DEPLOYMENT.md for detailed instructions.
 
 ## File Sizes
 
-- **WASM Module**: ~62 KB (optimized)
-- **JavaScript**: ~7 KB
-- **CSS**: ~4 KB
-- **HTML**: ~1 KB
-- **Total**: ~74 KB (before gzip)
+- **WASM Module**: ~95 KB (optimized)
+- **JavaScript Bundle**: ~379 KB (~120 KB gzipped)
+- **HTML + CSS**: ~5 KB
+- **Total**: ~480 KB (~220 KB gzipped)
 
 ## Performance
 
@@ -170,22 +196,25 @@ Essentially any modern browser with WebAssembly support.
 ## Documentation
 
 - **README.md**: Project overview
+- **asn1_web_decoder/README.md**: Web app documentation
 - **QUICKSTART.md**: 3-step setup guide
 - **DEMO.md**: Usage examples and features
 - **DEPLOYMENT.md**: Hosting instructions (9 platforms)
+- **REACT_MIGRATION.md**: React migration notes
+- **www/**: Additional React-specific documentation
 - **PROJECT_SUMMARY.md**: This file
 
 ## API
 
 The Rust library exposes one main function to JavaScript:
 
-\`\`\`rust
+```rust
 #[wasm_bindgen]
 pub fn decode_pem_to_json(pem_input: &str) -> Result<String, JsValue>
-\`\`\`
+```
 
 Returns JSON structure:
-\`\`\`json
+```json
 {
   "label": "PEM: CERTIFICATE",
   "tag": 0,
@@ -193,29 +222,33 @@ Returns JSON structure:
   "is_constructed": true,
   "length": 911,
   "value": null,
-  "children": [...]
+  "children": [...],
+  "byte_offset": 0,
+  "byte_length": 911
 }
-\`\`\`
+```
 
 ## Testing
 
 ### Automated
-\`\`\`bash
+```bash
 cd asn1_web_decoder
 cargo test
-\`\`\`
+```
 
 ### Manual
-1. Click "Load Sample" button
-2. Click "Decode"
-3. Verify tree appears with decoded structure
+1. Click the floating action button
+2. Click "Load Sample"
+3. Click "Decode"
+4. Verify tree and hex view appear correctly
+5. Test hover highlighting
 
 ### Real Data
-\`\`\`bash
+```bash
 openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem \
   -days 365 -nodes -subj "/C=US/O=Test/CN=example.com"
 # Paste cert.pem content into web form
-\`\`\`
+```
 
 ## Security
 
@@ -223,20 +256,30 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem \
 - No cookies or tracking
 - No external dependencies at runtime
 - WebAssembly sandbox isolation
-- XSS protection via content policy
+- Content Security Policy ready
 
 ## Future Enhancements
 
 Potential additions:
-- Export decoded structure (JSON/XML)
+- Export decoded structure (JSON/XML/YAML)
 - Certificate chain validation
 - Side-by-side comparison
-- Hex dump view
 - Search/filter functionality
-- Dark mode
+- Dark mode toggle
 - More ASN.1 types
-- Better error messages
+- Better error messages with suggestions
 - Copy individual nodes
+- Drag-and-drop file support
+
+## GitHub Actions Deployment
+
+The project includes automated GitHub Pages deployment:
+- Triggered on push to `main` branch
+- Builds WebAssembly from Rust source
+- Installs Node dependencies and builds React app
+- Deploys `www/dist/` to GitHub Pages
+
+See `.github/workflows/deploy-pages.yml` for configuration.
 
 ## License
 
@@ -247,6 +290,9 @@ MIT License (see individual project directories)
 - **pem crate**: PEM parsing
 - **wasm-bindgen**: WebAssembly tooling
 - **serde**: Serialization
+- **React**: UI framework
+- **Material-UI**: Component library
+- **Vite**: Build tool
 - **OpenSSL**: Test data generation
 
 ## Contact & Support
@@ -259,6 +305,6 @@ For issues or questions:
 
 ---
 
-**Project completed successfully!** ✅
+**Project Status**: ✅ Active and Production-Ready
 
 The ASN.1 Web Decoder is ready to use, deploy, and extend.

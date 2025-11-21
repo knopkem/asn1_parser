@@ -17,10 +17,11 @@ A WebAssembly-powered web application for decoding and visualizing PEM-formatted
 
 - Rust toolchain (install from https://rustup.rs)
 - wasm-pack (will be installed by build script if needed)
+- Node.js v16+ and npm
 
 ### Build Steps
 
-1. Run the build script:
+1. Build the WebAssembly module:
 ```bash
 ./build.sh
 ```
@@ -29,28 +30,45 @@ This will:
 - Install wasm-pack if needed
 - Compile the Rust library to WebAssembly
 - Generate JavaScript bindings
-- Output everything to `www/pkg/`
+- Output everything to `pkg/` (symlinked from `www/src/wasm`)
 
-2. Serve the website locally:
+2. Install dependencies and start dev server:
 ```bash
 cd www
-python3 -m http.server 8080
+npm install
+npm run dev
 ```
 
 3. Open your browser to http://localhost:8080
 
+### Production Build
+
+```bash
+cd www
+npm run build
+```
+
+The optimized production build will be in `www/dist/` directory.
+
 ## Usage
 
-1. Paste PEM-formatted ASN.1 data into the text area (e.g., certificates, keys)
-2. Click "Decode" or press Ctrl+Enter
-3. View the decoded structure in the tree view
-4. Click on tree nodes to expand/collapse them
+1. Click the **floating action button** (bottom-right corner) to open the input dialog
+2. Paste PEM-formatted ASN.1 data into the text area (or click "Load Sample")
+3. Click "Decode" to parse the structure
+4. View the decoded tree structure in the left panel
+5. View the color-coded hex dump in the right panel
+6. Click on tree nodes to expand/collapse them
+7. Hover over hex bytes to highlight corresponding tree nodes
 
-### Buttons
+### Features
 
-- **Decode**: Decode the input PEM data
-- **Clear**: Clear both input and output
-- **Load Sample**: Load a sample certificate for testing
+- **Full-Screen Layout**: Optimized two-panel interface
+- **Modal Input**: Floating action button for quick access
+- **Tree View**: Interactive, collapsible tree structure
+- **Hex View**: Color-coded hex dump with byte offsets
+- **Highlighting**: Hover interaction between tree and hex views
+- **Material Design**: Professional UI components
+- **Responsive**: Works on desktop and mobile
 
 ## Supported ASN.1 Types
 
@@ -82,72 +100,110 @@ The core decoder is written in Rust and compiled to WebAssembly:
 Modern React 18 application with Material-UI:
 - **Components**:
   - `App.jsx`: Main application with state management
-  - `InputDialog.jsx`: Modal dialog for PEM input
-  - `OutputSection.jsx`: Tree view panel
-  - `HexViewSection.jsx`: Hex dump panel
+  - `InputDialog.jsx`: Modal dialog for PEM input with floating action button
+  - `OutputSection.jsx`: Tree view panel with collapsible nodes
+  - `HexViewSection.jsx`: Hex dump panel with color coding
   - `TreeNode.jsx`: Recursive tree node component
-  - `HexView.jsx`: Color-coded hex display with auto-scroll
+  - `HexView.jsx`: Color-coded hex display with hover highlighting
 - **Build System**: Vite for fast development and optimized production builds
-- **Styling**: Material-UI components with custom theme
+- **Styling**: Material-UI components with Emotion CSS-in-JS
 - **State Management**: React hooks (useState, useEffect, useRef)
-- **WASM Integration**: Direct import of generated bindings
+- **WASM Integration**: Direct import from generated bindings via symlink
 
 ### Build Output
 
-After building, `www/dist/` contains:
-- Optimized JavaScript bundle (~379KB, ~120KB gzipped)
-- WebAssembly module (~95KB)
-- HTML and assets
-- Ready for static hosting
+After building:
+- `pkg/`: WebAssembly module (~95KB) and JavaScript bindings
+- `www/dist/`: Optimized production build
+  - JavaScript bundle (~379KB, ~120KB gzipped)
+  - HTML and assets
+  - Ready for static hosting
 
 ## Deployment
 
-The `www/dist/` directory (after building) contains a complete static website that can be deployed to:
-- GitHub Pages (automated via Actions)
-- Netlify
-- Vercel
-- Any static hosting service
-- Local HTTP server
-
-Simply copy the entire `www/dist/` directory to your hosting service.
+The `www/dist/` directory (after `npm run build`) contains a complete static website ready for deployment.
 
 ### GitHub Pages (Automated)
 
 This repository includes a GitHub Actions workflow that automatically builds and deploys to GitHub Pages:
 
-1. The workflow is triggered on pushes to the `main` branch
-2. It builds the WebAssembly module from Rust source
-3. Installs Node.js dependencies and builds the React app
+1. The workflow triggers on pushes to the `main` branch (or manually via workflow_dispatch)
+2. Builds the WebAssembly module from Rust source
+3. Installs Node.js dependencies and builds the React app with Vite
 4. Deploys the `www/dist/` directory to GitHub Pages
 
-To enable GitHub Pages for your fork:
-1. Go to your repository Settings → Pages
+**To enable GitHub Pages:**
+1. Go to repository Settings → Pages
 2. Under "Build and deployment", select "GitHub Actions" as the source
-3. Push to the `main` branch or manually trigger the workflow
+3. Push to `main` branch or manually trigger the workflow
 4. Your site will be available at `https://<username>.github.io/<repository>/`
 
 See `.github/workflows/deploy-pages.yml` for the workflow configuration.
 
+### Other Platforms
+
+The static build in `www/dist/` can be deployed to:
+### Other Platforms
+
+The static build in `www/dist/` can be deployed to:
+- Netlify
+- Vercel
+- Cloudflare Pages
+- AWS S3 + CloudFront
+- Firebase Hosting
+- Any static hosting service
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed platform-specific instructions.
+
 ## Development
+
+### Project Structure
+
+```
+asn1_web_decoder/
+├── src/
+│   └── lib.rs                  # Rust WASM library
+├── www/
+│   ├── src/
+│   │   ├── App.jsx             # Main React component
+│   │   ├── main.jsx            # React entry point
+│   │   ├── index.css           # Global styles
+│   │   ├── components/         # React components
+│   │   │   ├── InputDialog.jsx
+│   │   │   ├── OutputSection.jsx
+│   │   │   ├── HexViewSection.jsx
+│   │   │   ├── TreeNode.jsx
+│   │   │   └── HexView.jsx
+│   │   └── wasm/               # Symlink to ../../pkg
+│   ├── dist/                   # Production build output
+│   ├── index.html              # HTML entry point
+│   ├── package.json
+│   └── vite.config.js          # Vite configuration
+├── pkg/                        # Generated WASM (after build)
+├── Cargo.toml
+└── build.sh                    # Build script
+```
 
 ### Modifying the Rust Decoder
 
 1. Edit `src/lib.rs`
-2. Rebuild WASM: `wasm-pack build --release --target web --out-dir www/src/wasm`
+2. Rebuild WASM: `./build.sh`
 3. Restart dev server: `cd www && npm run dev`
+
+The WASM bindings are automatically available via symlink at `www/src/wasm`.
 
 ### Modifying the React UI
 
 1. Edit files in `www/src/`
-2. Changes auto-reload with Vite HMR
+2. Changes auto-reload with Vite Hot Module Replacement (HMR)
 3. No rebuild needed during development
 
-### Production Testing
+### Testing Production Build
 
 ```bash
 cd www
-npm run build
-npm run preview
+npm run build    # Build for production
+npm run preview  # Preview production build locally
 ```
 
 ## Example Input

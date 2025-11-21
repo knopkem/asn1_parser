@@ -1,52 +1,46 @@
 # ASN.1 Decoder Project
 
-A collection of Rust-based tools for decoding and analyzing ASN.1 (Abstract Syntax Notation One) structures in PEM format.
+A Rust-based WebAssembly web application for decoding and analyzing ASN.1 (Abstract Syntax Notation One) structures in PEM format.
 
 Try the online version: [ASN1 PEM Decoder](https://knopkem.github.io/asn1_parser/)
 
-## Projects
+## ASN.1 Web Decoder
 
-### 1. asn1_decoder (CLI Tool)
-A command-line utility for decoding PEM-formatted ASN.1 structures.
-
-**Features:**
-- Decode certificates, keys, CSRs from PEM files
-- Read from files or stdin
-- Detailed hierarchical output to terminal
-- Shows tags, lengths, types, and decoded values
-
-**Usage:**
-```bash
-cd asn1_decoder
-cargo build --release
-./target/release/asn1_decoder certificate.pem
-```
-
-[View CLI Documentation →](./asn1_decoder)
-
-### 2. asn1_web_decoder (Web Application)
-A WebAssembly-powered web interface for decoding ASN.1 structures with an interactive tree view.
+A modern React + Material-UI web application powered by WebAssembly for decoding ASN.1 structures with an interactive tree view and hex viewer.
 
 **Features:**
-- Browser-based, no server required
-- Interactive tree widget with expand/collapse
-- Real-time decoding using WebAssembly
-- Beautiful, responsive UI
-- Color-coded badges for tag classes and types
-- Sample data included for testing
-- **Automatically deployed to GitHub Pages**
+- 🚀 **Browser-based**: No server required, runs entirely in your browser
+- 🎨 **Modern React UI**: Built with React 18 and Material-UI components
+- 🔍 **Interactive Tree View**: Expand/collapse nodes to explore ASN.1 structures
+- 📊 **Hex Viewer**: Color-coded hex dump with byte offset tracking
+- ⚡ **Real-time Decoding**: Instant results using WebAssembly
+- 🎯 **Full-Screen Layout**: Optimized split-panel interface
+- 💾 **Sample Data**: Built-in example certificates for testing
+- 🌐 **Automatically Deployed**: GitHub Pages deployment via GitHub Actions
+- 🔒 **Privacy-First**: All processing happens in your browser
 
 **Quick Start:**
 ```bash
+# Build the WebAssembly module
 cd asn1_web_decoder
 ./build.sh
+
+# Install dependencies and start dev server
 cd www
-./serve.sh
+npm install
+npm run dev
 # Open http://localhost:8080
 ```
 
+**Production Build:**
+```bash
+cd asn1_web_decoder/www
+npm run build
+# Output in www/dist/
+```
+
 **GitHub Pages:**
-The web application is automatically built and deployed to GitHub Pages via GitHub Actions. See `.github/workflows/deploy-pages.yml` for details.
+The web application is automatically built and deployed to GitHub Pages via GitHub Actions when you push to the main branch. See `.github/workflows/deploy-pages.yml` for details.
 
 [View Web App Documentation →](./asn1_web_decoder)
 
@@ -83,9 +77,11 @@ DER (Distinguished Encoding Rules) is the binary encoding of ASN.1 structures. P
 - **serde**: Serialization framework
 
 ### Web Technologies
+- **React 18**: Modern component-based UI framework
+- **Material-UI (MUI) 5**: Professional design system
+- **Vite 5**: Fast build tool and dev server
 - **WebAssembly**: Fast, secure browser execution
-- **Vanilla JavaScript**: No frameworks, pure ES6+
-- **CSS Grid/Flexbox**: Modern responsive layout
+- **Emotion**: CSS-in-JS styling
 
 ## Use Cases
 
@@ -99,11 +95,11 @@ Examine cryptographic keys and certificates for security compliance, key sizes, 
 Debug certificate-related issues in applications by understanding the exact structure of certificates and keys.
 
 ### Education
-Learn about X.509 certificates, ASN.1 encoding, and cryptographic structures through interactive visualization.
+Learn about X.509 certificates, ASN.1 encoding, and cryptographic structures through interactive visualization with real-time hex view.
 
 ## Supported ASN.1 Types
 
-Both tools support decoding:
+The web application supports decoding:
 
 - **BOOLEAN**: True/false values
 - **INTEGER**: Numbers of arbitrary size
@@ -120,71 +116,89 @@ Both tools support decoding:
 
 ## Example: Decoding a Certificate
 
-### Using CLI Tool
+### Using Web App
+1. Open the deployed site or run locally: `cd asn1_web_decoder/www && npm run dev`
+2. Click the **floating action button** (bottom-right) to open input dialog
+3. Paste your certificate content (or click "Load Sample")
+4. Click "Decode"
+5. Explore the interactive tree view on the left panel
+6. View the color-coded hex dump on the right panel
+7. Hover over hex bytes to highlight corresponding tree nodes
+
+### Generate Test Certificate
 ```bash
-# Generate a test certificate
 openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes \
   -subj "/C=US/ST=CA/L=SF/O=Test/CN=example.com"
-
-# Decode it
-./asn1_decoder/target/release/asn1_decoder cert.pem
 ```
-
-### Using Web App
-1. Open http://localhost:8080
-2. Paste the certificate content
-3. Click "Decode"
-4. Explore the interactive tree
 
 ## Development
-
-### CLI Tool
-```bash
-cd asn1_decoder
-cargo build
-cargo test
-cargo run -- path/to/file.pem
-```
 
 ### Web Application
 ```bash
 cd asn1_web_decoder
 
-# Build
+# Build WebAssembly module
 ./build.sh
 
-# Develop (edit files, rebuild as needed)
-cargo check
-wasm-pack build --target web --out-dir www/pkg
-
-# Test locally
+# Start development server
 cd www
-./serve.sh
+npm install
+npm run dev
+# Open http://localhost:8080
+
+# Build for production
+npm run build
+# Output in www/dist/
+
+# Preview production build
+npm run preview
+```
+
+### Modifying Rust Decoder
+```bash
+cd asn1_web_decoder
+# Edit src/lib.rs
+./build.sh
+# Restart dev server to see changes
+```
+
+### Modifying React UI
+```bash
+cd asn1_web_decoder/www
+# Edit files in src/
+# Changes auto-reload with Vite HMR
 ```
 
 ## Project Structure
 
 ```
 asn1_decoder/
-├── asn1_decoder/           # CLI tool
-│   ├── src/
-│   │   └── main.rs         # CLI implementation
-│   ├── Cargo.toml
-│   └── README.md
-│
 ├── asn1_web_decoder/       # Web application
 │   ├── src/
 │   │   └── lib.rs          # Rust/WASM library
 │   ├── www/
-│   │   ├── index.html      # Web interface
-│   │   ├── styles.css      # Styling
-│   │   ├── app.js          # JavaScript app
-│   │   └── pkg/            # Generated WASM (after build)
+│   │   ├── src/
+│   │   │   ├── App.jsx             # Main React component
+│   │   │   ├── components/         # React components
+│   │   │   │   ├── InputDialog.jsx
+│   │   │   │   ├── OutputSection.jsx
+│   │   │   │   ├── HexViewSection.jsx
+│   │   │   │   ├── TreeNode.jsx
+│   │   │   │   └── HexView.jsx
+│   │   │   └── wasm/               # Symlink to ../../pkg
+│   │   ├── dist/                   # Production build output
+│   │   ├── index.html              # HTML entry
+│   │   ├── package.json
+│   │   └── vite.config.js
+│   ├── pkg/                # Generated WASM (after build)
 │   ├── Cargo.toml
 │   ├── build.sh            # Build script
 │   ├── README.md
-│   ├── DEMO.md
 │   └── DEPLOYMENT.md
+│
+├── .github/
+│   └── workflows/
+│       └── deploy-pages.yml    # GitHub Pages deployment
 │
 └── README.md               # This file
 ```
@@ -215,20 +229,34 @@ The web application requires WebAssembly support:
 
 ## Performance
 
-- **CLI Tool**: <10ms for typical certificates
-- **Web App**: 
-  - WASM module: ~62KB (optimized)
-  - Decode time: <10ms
-  - First load: ~100-200ms (WASM initialization)
+- **WASM Module**: ~95 KB (optimized)
+- **JavaScript Bundle**: ~379 KB (~120 KB gzipped)
+- **WASM Load**: ~100-200ms (first time)
+- **Decode Time**: <10ms (typical certificate)
+- **Render Time**: <50ms (typical tree)
+- **Total First Load**: <300ms
 
 ## Contributing
 
-Both projects welcome contributions:
+The project welcomes contributions:
 - Bug fixes
 - New ASN.1 type support
-- UI improvements
+- UI/UX improvements
 - Documentation enhancements
 - Performance optimizations
+- New features (export, validation, etc.)
+
+## Deployment
+
+The `www/dist/` directory (after building) contains a complete static website that can be deployed to:
+- **GitHub Pages** (automated via GitHub Actions)
+- Netlify
+- Vercel
+- Cloudflare Pages
+- AWS S3 + CloudFront
+- Any static hosting service
+
+See [DEPLOYMENT.md](./asn1_web_decoder/DEPLOYMENT.md) for detailed instructions.
 
 ## License
 
@@ -244,7 +272,9 @@ MIT License - See individual project directories for details.
 
 ## Acknowledgments
 
-- **rasn**: Rust ASN.1 library
-- **pem**: PEM parsing library
+- **pem crate**: PEM parsing library
 - **wasm-bindgen**: WebAssembly tooling
+- **React**: UI framework
+- **Material-UI**: Component library
+- **Vite**: Build tool
 - **OpenSSL**: For test data generation
