@@ -1,0 +1,254 @@
+use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Asn1Node {
+    pub label: String,
+    pub tag: u8,
+    pub tag_class: String,
+    pub is_constructed: bool,
+    pub length: usize,
+    pub value: Option<String>,
+    pub children: Vec<Asn1Node>,
+}
+
+#[wasm_bindgen]
+pub fn decode_pem_to_json(pem_input: &str) -> Result<String, JsValue> {
+    match decode_pem_internal(pem_input) {
+        Ok(json) => Ok(json),
+        Err(e) => Err(JsValue::from_str(&format!("Error: {}", e))),
+    }
+}
+
+fn decode_pem_internal(pem_input: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let pem = pem::parse(pem_input)?;
+    
+    let mut root = Asn1Node {
+        label: format!("PEM: {}", pem.tag()),
+        tag: 0,
+        tag_class: "PEM".to_string(),
+        is_constructed: true,
+        length: pem.contents().len(),
+        value: None,
+        children: Vec::new(),
+    };
+    
+    decode_der_recursive(pem.contents(), &mut root.children)?;
+    
+    Ok(serde_json::to_string_pretty(&root)?)
+}
+
+fn decode_der_recursive(data: &[u8], nodes: &mut Vec<Asn1Node>) -> Result<(), Box<dyn std::error::Error>> {
+    let mut pos = 0;
+    
+    while pos < data.len() {
+        if pos >= data.len() {
+            break;
+        }
+        
+        let tag = data[pos];
+        pos += 1;
+        
+        if pos >= data.len() {
+            break;
+        }
+        
+        let (length, length_bytes) = parse_length(&data[pos..])?;
+        pos += length_bytes;
+        
+        if pos + length > data.len() {
+            break;
+        }
+        
+        let tag_class = (tag & 0xC0) >> 6;
+        let is_constructed = (tag & 0x20) != 0;
+        let tag_number = tag & 0x1F;
+        
+        let tag_class_str = match tag_class {
+            0 => "UNIVERSAL",
+            1 => "APPLICATION",
+            2 => "CONTEXT",
+            3 => "PRIVATE",
+            _ => "UNKNOWN",
+        };
+        
+        let tag_type = get_universal_tag_name(tag_number);
+        
+        let label = if tag_class == 0 {
+            format!("{} (Tag {})", tag_type, tag_number)
+        } else {
+            format!("[{}] Tag {}", tag_class_str, tag_number)
+        };
+        
+        let content = &data[pos..pos + length];
+        
+        let mut node = Asn1Node {
+            label,
+            tag: tag_number,
+            tag_class: tag_class_str.to_string(),
+            is_constructed,
+            length,
+            value: None,
+            children: Vec::new(),
+        };
+        
+        if is_constructed {
+            decode_der_recursive(content, &mut node.children)?;
+        } else {
+            node.value = Some(decode_value(tag_number, content));
+        }
+        
+        nodes.push(node);
+        pos += length;
+    }
+    
+    Ok(())
+}
+
+fn parse_length(data: &[u8]) -> Result<(usize, usize), Box<dyn std::error::Error>> {
+    if data.is_empty() {
+        return Err("Unexpected end of data".into());
+    }
+    
+    let first_byte = data[0];
+    
+    if first_byte & 0x80 == 0 {
+        Ok((first_byte as usize, 1))
+    } else {
+        let num_octets = (first_byte & 0x7F) as usize;
+        if num_octets == 0 || num_octets > 4 {
+            return Err("Invalid length encoding".into());
+        }
+        
+        if data.len() < 1 + num_octets {
+            return Err("Unexpected end of data".into());
+        }
+        
+        let mut length = 0usize;
+        for i in 0..num_octets {
+            length = (length << 8) | (data[1 + i] as usize);
+        }
+        
+        Ok((length, 1 + num_octets))
+    }
+}
+
+fn get_universal_tag_name(tag: u8) -> &'static str {
+    match tag {
+        1 => "BOOLEAN",
+        2 => "INTEGER",
+        3 => "BIT STRING",
+        4 => "OCTET STRING",
+        5 => "NULL",
+        6 => "OBJECT IDENTIFIER",
+        12 => "UTF8String",
+        16 => "SEQUENCE",
+        17 => "SET",
+        19 => "PrintableString",
+        20 => "TeletexString",
+        22 => "IA5String",
+        23 => "UTCTime",
+        24 => "GeneralizedTime",
+        _ => "Unknown",
+    }
+}
+
+fn decode_value(tag: u8, content: &[u8]) -> String {
+    match tag {
+        2 => decode_integer(content),
+        3 => decode_bit_string(content),
+        4 => decode_octet_string(content),
+        6 => format!("OID: {}", decode_oid(content)),
+        12 | 19 | 20 | 22 => {
+            if let Ok(s) = std::str::from_utf8(content) {
+                format!("\"{}\"", s)
+            } else {
+                hex_string(content)
+            }
+        }
+        23 | 24 => {
+            if let Ok(s) = std::str::from_utf8(content) {
+                format!("Time: {}", s)
+            } else {
+                hex_string(content)
+            }
+        }
+        1 => format!("{}", content.get(0).map_or(false, |&b| b != 0)),
+        5 => "NULL".to_string(),
+        _ => {
+            if content.len() <= 32 {
+                hex_string(content)
+            } else {
+                format!("{} bytes", content.len())
+            }
+        }
+    }
+}
+
+fn decode_integer(data: &[u8]) -> String {
+    if data.is_empty() {
+        return "0".to_string();
+    }
+    
+    if data.len() <= 8 {
+        let mut value: i64 = if data[0] & 0x80 != 0 { -1 } else { 0 };
+        for &byte in data {
+            value = (value << 8) | (byte as i64);
+        }
+        format!("{}", value)
+    } else {
+        format!("0x{}", hex_string(data))
+    }
+}
+
+fn decode_bit_string(data: &[u8]) -> String {
+    if data.is_empty() {
+        return "Empty".to_string();
+    }
+    let unused_bits = data[0];
+    if data.len() <= 17 {
+        format!("{} unused bits, data: {}", unused_bits, hex_string(&data[1..]))
+    } else {
+        format!("{} unused bits, {} bytes", unused_bits, data.len() - 1)
+    }
+}
+
+fn decode_octet_string(data: &[u8]) -> String {
+    if data.len() <= 32 {
+        hex_string(data)
+    } else {
+        format!("{} bytes", data.len())
+    }
+}
+
+fn decode_oid(data: &[u8]) -> String {
+    if data.is_empty() {
+        return "".to_string();
+    }
+    
+    let mut result = Vec::new();
+    let first = data[0];
+    result.push(first / 40);
+    result.push(first % 40);
+    
+    let mut value = 0u64;
+    for &byte in &data[1..] {
+        value = (value << 7) | ((byte & 0x7F) as u64);
+        if byte & 0x80 == 0 {
+            result.push(value as u8);
+            value = 0;
+        }
+    }
+    
+    result.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(".")
+}
+
+fn hex_string(data: &[u8]) -> String {
+    data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join("")
+}
+
+#[wasm_bindgen(start)]
+pub fn main() {
+    #[cfg(feature = "console_error_panic_hook")]
+    console_error_panic_hook::set_once();
+}
