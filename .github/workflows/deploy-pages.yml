@@ -33,7 +33,7 @@ jobs:
       - name: Build WebAssembly module
         run: |
           cd asn1_web_decoder
-          wasm-pack build --release --target web --out-dir www/src/wasm
+          wasm-pack build --release --target web --out-dir pkg
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
