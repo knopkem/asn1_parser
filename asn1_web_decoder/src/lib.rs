@@ -44,13 +44,13 @@ pub fn pem_to_hex(pem_input: &str) -> Result<String, JsValue> {
 }
 
 #[wasm_bindgen]
-pub fn encode_asn1_to_pem(json_str: &str) -> Result<String, JsValue> {
+pub fn encode_asn1_to_pem(json_str: &str, label: &str) -> Result<String, JsValue> {
     let root: EncoderNode = serde_json::from_str(json_str)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse JSON: {}", e)))?;
     
     let der_bytes = encode_asn1_tree(&root)
         .map_err(|e| JsValue::from_str(&format!("Failed to encode ASN.1: {}", e)))?;
     
-    let pem = pem::Pem::new("ASN1 DATA", der_bytes);
+    let pem = pem::Pem::new(label, der_bytes);
     Ok(pem::encode(&pem))
 }

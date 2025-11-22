@@ -193,8 +193,46 @@ fn encode_integer(value: &str) -> Result<Vec<u8>, EncodeError> {
 }
 
 fn encode_bit_string(value: &str) -> Result<Vec<u8>, EncodeError> {
-    // Expected format: "X unused bits, data: HEXSTRING"
-    if let Some(data_start) = value.find("data:") {
+    // Expected format from decoder: "01010101... (unused bits: X)"
+    // Also support legacy format: "X unused bits, data: HEXSTRING"
+    
+    // Try new format first: "bits (unused bits: N)"
+    if let Some(unused_start) = value.rfind("(unused bits:") {
+        let bits_part = value[..unused_start].trim();
+        let unused_part = &value[unused_start + 13..]; // Skip "(unused bits:"
+        let unused_bits_str = unused_part.trim_end_matches(')').trim();
+        let unused_bits = unused_bits_str.parse::<u8>()
+            .map_err(|_| EncodeError::InvalidValue("Invalid unused bits in bit string".to_string()))?;
+        
+        // Convert bit string to bytes
+        let mut bytes = Vec::new();
+        let mut current_byte = 0u8;
+        let mut bit_count = 0;
+        
+        for ch in bits_part.chars() {
+            if ch == '0' || ch == '1' {
+                current_byte = (current_byte << 1) | (if ch == '1' { 1 } else { 0 });
+                bit_count += 1;
+                
+                if bit_count == 8 {
+                    bytes.push(current_byte);
+                    current_byte = 0;
+                    bit_count = 0;
+                }
+            }
+        }
+        
+        // Handle remaining bits
+        if bit_count > 0 {
+            current_byte <<= 8 - bit_count;
+            bytes.push(current_byte);
+        }
+        
+        let mut result = vec![unused_bits];
+        result.extend_from_slice(&bytes);
+        Ok(result)
+    } else if let Some(data_start) = value.find("data:") {
+        // Legacy format: "X unused bits, data: HEXSTRING"
         let hex_part = value[data_start + 5..].trim();
         let unused_bits_str = value.split_whitespace().next().unwrap_or("0");
         let unused_bits = unused_bits_str.parse::<u8>()
@@ -209,7 +247,26 @@ fn encode_bit_string(value: &str) -> Result<Vec<u8>, EncodeError> {
 }
 
 fn encode_octet_string(value: &str) -> Result<Vec<u8>, EncodeError> {
-    hex_to_bytes(value)
+    // Handle different formats from decoder:
+    // 1. "[N bytes] HEX HEX HEX..." - binary data
+    // 2. Plain string - UTF-8 strings (quotes removed from decoder)
+    // 3. Plain hex string - raw hex
+    
+    let value = value.trim();
+    
+    // Check if it has the "[N bytes] HEX" format
+    if value.starts_with('[') {
+        if let Some(hex_start) = value.find(']') {
+            let hex_part = value[hex_start + 1..].trim();
+            return hex_to_bytes(hex_part);
+        }
+    }
+    
+    // Try to parse as hex first - if it fails, treat as UTF-8 string
+    match hex_to_bytes(value) {
+        Ok(bytes) => Ok(bytes),
+        Err(_) => Ok(value.as_bytes().to_vec()),
+    }
 }
 
 fn encode_null(_value: &str) -> Result<Vec<u8>, EncodeError> {
@@ -257,7 +314,7 @@ fn encode_oid_component(mut num: u32) -> Vec<u8> {
 }
 
 fn encode_string(value: &str) -> Result<Vec<u8>, EncodeError> {
-    Ok(value.as_bytes().to_vec())
+    Ok(value.trim().as_bytes().to_vec())
 }
 
 fn hex_to_bytes(hex: &str) -> Result<Vec<u8>, EncodeError> {

@@ -5,7 +5,7 @@ import { Edit } from '@mui/icons-material'
 import InputDialog from './components/InputDialog'
 import OutputSection from './components/OutputSection'
 import HexViewSection from './components/HexViewSection'
-import init, { decode_pem_to_json, pem_to_hex, encode_tree_to_pem } from './wasm/asn1_web_decoder.js'
+import init, { decode_pem_to_json, pem_to_hex, encode_asn1_to_pem } from './wasm/asn1_web_decoder.js'
 import wasmUrl from './wasm/asn1_web_decoder_bg.wasm?url'
 
 const SAMPLE_CERT = `-----BEGIN CERTIFICATE-----
@@ -165,7 +165,7 @@ function App() {
       const jsonTree = JSON.stringify(updatedData)
       console.log('JSON tree for encoding:', jsonTree.substring(0, 200) + '...');
       
-      const newPem = encode_tree_to_pem(jsonTree, originalPemLabel)
+      const newPem = encode_asn1_to_pem(jsonTree, originalPemLabel)
       console.log('Generated new PEM:', newPem.substring(0, 100) + '...');
       
       // Re-decode the new PEM to update everything

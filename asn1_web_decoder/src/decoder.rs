@@ -205,7 +205,7 @@ fn decode_octet_string(data: &[u8]) -> String {
     // Try to decode as UTF-8 string first
     if let Ok(s) = std::str::from_utf8(data) {
         if s.chars().all(|c| !c.is_control() || c == '\n' || c == '\r' || c == '\t') {
-            return format!("\"{}\"", s);
+            return s.to_string();
         }
     }
     
@@ -216,35 +216,35 @@ fn decode_octet_string(data: &[u8]) -> String {
 
 fn decode_utf8_string(data: &[u8]) -> String {
     match std::str::from_utf8(data) {
-        Ok(s) => format!("\"{}\"", s),
+        Ok(s) => s.to_string(),
         Err(_) => format!("[Invalid UTF-8: {} bytes]", data.len()),
     }
 }
 
 fn decode_printable_string(data: &[u8]) -> String {
     match std::str::from_utf8(data) {
-        Ok(s) => format!("\"{}\"", s),
+        Ok(s) => s.to_string(),
         Err(_) => format!("[Invalid PrintableString: {} bytes]", data.len()),
     }
 }
 
 fn decode_ia5_string(data: &[u8]) -> String {
     match std::str::from_utf8(data) {
-        Ok(s) => format!("\"{}\"", s),
+        Ok(s) => s.to_string(),
         Err(_) => format!("[Invalid IA5String: {} bytes]", data.len()),
     }
 }
 
 fn decode_utc_time(data: &[u8]) -> String {
     match std::str::from_utf8(data) {
-        Ok(s) => format!("\"{}\"", s),
+        Ok(s) => s.to_string(),
         Err(_) => format!("[Invalid UTCTime: {} bytes]", data.len()),
     }
 }
 
 fn decode_generalized_time(data: &[u8]) -> String {
     match std::str::from_utf8(data) {
-        Ok(s) => format!("\"{}\"", s),
+        Ok(s) => s.to_string(),
         Err(_) => format!("[Invalid GeneralizedTime: {} bytes]", data.len()),
     }
 }
