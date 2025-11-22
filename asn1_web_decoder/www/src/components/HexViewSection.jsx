@@ -1,7 +1,10 @@
 import { Box, Typography, Paper } from '@mui/material'
 import HexView from './HexView'
+import { useRef } from 'react'
 
 function HexViewSection({ hexData, loading, highlightStart, highlightEnd }) {
+  const scrollContainerRef = useRef(null)
+  
   return (
     <Box sx={{ 
       display: 'flex', 
@@ -17,6 +20,7 @@ function HexViewSection({ hexData, loading, highlightStart, highlightEnd }) {
       </Typography>
       
       <Paper 
+        ref={scrollContainerRef}
         elevation={2}
         sx={{ 
           flexGrow: 1,
@@ -33,6 +37,7 @@ function HexViewSection({ hexData, loading, highlightStart, highlightEnd }) {
           hexData={hexData}
           highlightStart={highlightStart}
           highlightEnd={highlightEnd}
+          scrollContainerRef={scrollContainerRef}
         />
       </Paper>
 

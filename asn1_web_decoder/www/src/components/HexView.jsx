@@ -1,13 +1,12 @@
 import { Box, Typography } from '@mui/material'
 import { memo, useEffect, useRef } from 'react'
 
-const HexView = memo(({ hexData, highlightStart, highlightEnd }) => {
-  const containerRef = useRef(null)
+const HexView = memo(({ hexData, highlightStart, highlightEnd, scrollContainerRef }) => {
   const highlightedRowRef = useRef(null)
 
   useEffect(() => {
-    if (highlightedRowRef.current && containerRef.current) {
-      const container = containerRef.current
+    if (highlightedRowRef.current && scrollContainerRef?.current) {
+      const container = scrollContainerRef.current
       const element = highlightedRowRef.current
       
       const containerRect = container.getBoundingClientRect()
@@ -18,7 +17,7 @@ const HexView = memo(({ hexData, highlightStart, highlightEnd }) => {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }
-  }, [highlightStart, highlightEnd])
+  }, [highlightStart, highlightEnd, scrollContainerRef])
 
   if (!hexData) {
     return (
@@ -93,7 +92,6 @@ const HexView = memo(({ hexData, highlightStart, highlightEnd }) => {
 
   return (
     <Box 
-      ref={containerRef}
       sx={{ 
         fontFamily: '"Courier New", monospace',
         fontSize: '0.6rem',
