@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Box, IconButton, Typography, Snackbar } from '@mui/material'
-import { ExpandMore, ChevronRight, ContentCopy } from '@mui/icons-material'
+import { Box, IconButton, Typography, Snackbar, TextField } from '@mui/material'
+import { ExpandMore, ChevronRight, ContentCopy, Edit, Check, Close } from '@mui/icons-material'
 
-function TreeNode({ node, onNodeHover }) {
+function TreeNode({ node, onNodeHover, onValueEdit }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
   const hasChildren = node.children && node.children.length > 0
 
   const toggleCollapse = (e) => {
@@ -22,6 +24,30 @@ function TreeNode({ node, onNodeHover }) {
         console.error('Failed to copy:', err)
       }
     }
+  }
+
+  const handleStartEdit = (e) => {
+    e.stopPropagation()
+    setEditValue(node.value || '')
+    setIsEditing(true)
+  }
+
+  const handleSaveEdit = (e) => {
+    e.stopPropagation()
+    if (onValueEdit) {
+      onValueEdit(node, editValue)
+    }
+    setIsEditing(false)
+  }
+
+  const handleCancelEdit = (e) => {
+    e.stopPropagation()
+    setIsEditing(false)
+    setEditValue('')
+  }
+
+  const handleEditChange = (e) => {
+    setEditValue(e.target.value)
   }
 
   const handleCloseSnackbar = () => {
@@ -114,7 +140,7 @@ function TreeNode({ node, onNodeHover }) {
           (O: {node.byte_offset?.toString(16).padStart(4, '0') || '0000'}, L: {node.length})
         </Typography>
 
-        {node.value && (
+        {node.value && !isEditing && (
           <Box sx={{ display: 'flex', alignItems: 'flex-start', ml: 1, flex: 1, minWidth: 0 }}>
             <Typography 
               component="span" 
@@ -148,6 +174,87 @@ function TreeNode({ node, onNodeHover }) {
             >
               <ContentCopy sx={{ fontSize: '0.75rem' }} />
             </IconButton>
+            <IconButton
+              size="small"
+              onClick={handleStartEdit}
+              sx={{
+                ml: 0.25,
+                p: 0.25,
+                opacity: 0.6,
+                flexShrink: 0,
+                '&:hover': {
+                  opacity: 1,
+                  bgcolor: 'rgba(237, 108, 2, 0.1)'
+                }
+              }}
+              title="Edit value"
+            >
+              <Edit sx={{ fontSize: '0.75rem' }} />
+            </IconButton>
+          </Box>
+        )}
+
+        {node.value && isEditing && (
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 1, flex: 1, minWidth: 0 }}>
+            <TextField
+              value={editValue}
+              onChange={handleEditChange}
+              onClick={(e) => e.stopPropagation()}
+              size="small"
+              variant="outlined"
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                '& .MuiInputBase-root': {
+                  fontSize: '0.6rem',
+                  fontFamily: '"Courier New", monospace',
+                  lineHeight: 1.2,
+                  py: 0.25,
+                  px: 0.5
+                },
+                '& .MuiInputBase-input': {
+                  py: 0.25,
+                  px: 0.5
+                }
+              }}
+              autoFocus
+            />
+            <IconButton
+              size="small"
+              onClick={handleSaveEdit}
+              sx={{
+                ml: 0.5,
+                p: 0.25,
+                opacity: 0.6,
+                flexShrink: 0,
+                color: 'success.main',
+                '&:hover': {
+                  opacity: 1,
+                  bgcolor: 'rgba(46, 125, 50, 0.1)'
+                }
+              }}
+              title="Save changes"
+            >
+              <Check sx={{ fontSize: '0.75rem' }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={handleCancelEdit}
+              sx={{
+                ml: 0.25,
+                p: 0.25,
+                opacity: 0.6,
+                flexShrink: 0,
+                color: 'error.main',
+                '&:hover': {
+                  opacity: 1,
+                  bgcolor: 'rgba(211, 47, 47, 0.1)'
+                }
+              }}
+              title="Cancel editing"
+            >
+              <Close sx={{ fontSize: '0.75rem' }} />
+            </IconButton>
           </Box>
         )}
       </Box>
@@ -159,7 +266,7 @@ function TreeNode({ node, onNodeHover }) {
           borderLeft: '1px solid #ddd'
         }}>
           {node.children.map((child, index) => (
-            <TreeNode key={index} node={child} onNodeHover={onNodeHover} />
+            <TreeNode key={index} node={child} onNodeHover={onNodeHover} onValueEdit={onValueEdit} />
           ))}
         </Box>
       )}

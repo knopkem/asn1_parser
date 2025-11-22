@@ -1,11 +1,15 @@
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 
+mod encoder;
+use encoder::{encode_asn1_tree, Asn1Node as EncoderNode};
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Asn1Node {
     pub label: String,
     pub tag: u8,
     pub tag_class: String,
+    pub tag_number: u32,
     pub is_constructed: bool,
     pub length: usize,
     pub value: Option<String>,
@@ -42,6 +46,7 @@ fn decode_pem_internal(pem_input: &str) -> Result<String, Box<dyn std::error::Er
     let mut root = Asn1Node {
         label: format!("PEM: {}", pem.tag()),
         tag: 0,
+        tag_number: 0,
         tag_class: "PEM".to_string(),
         is_constructed: true,
         length: pem.contents().len(),
@@ -105,6 +110,7 @@ fn decode_der_recursive(data: &[u8], nodes: &mut Vec<Asn1Node>, base_offset: usi
         let mut node = Asn1Node {
             label,
             tag: tag_number,
+            tag_number: tag_number as u32,
             tag_class: tag_class_str.to_string(),
             is_constructed,
             length,
@@ -269,6 +275,41 @@ fn decode_oid(data: &[u8]) -> String {
 
 fn hex_string(data: &[u8]) -> String {
     data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join("")
+}
+
+/// Convert Asn1Node to EncoderNode for encoding
+fn to_encoder_node(node: &Asn1Node) -> EncoderNode {
+    EncoderNode {
+        label: node.label.clone(),
+        tag_class: node.tag_class.clone(),
+        tag_number: node.tag_number,
+        is_constructed: node.is_constructed,
+        byte_offset: node.byte_offset,
+        byte_length: node.byte_length,
+        length: node.length,
+        value: node.value.clone(),
+        children: if node.children.is_empty() {
+            None
+        } else {
+            Some(node.children.iter().map(|c| to_encoder_node(c)).collect())
+        },
+    }
+}
+
+/// Encode a modified ASN.1 tree back to PEM format
+#[wasm_bindgen]
+pub fn encode_tree_to_pem(json_tree: &str, pem_label: &str) -> Result<String, JsValue> {
+    let node: Asn1Node = serde_json::from_str(json_tree)
+        .map_err(|e| JsValue::from_str(&format!("JSON parse error: {}", e)))?;
+    
+    let encoder_node = to_encoder_node(&node);
+    let der_bytes = encode_asn1_tree(&encoder_node)
+        .map_err(|e| JsValue::from_str(&format!("Encoding error: {}", e)))?;
+    
+    let pem = pem::Pem::new(pem_label, der_bytes);
+    let pem_string = pem::encode(&pem);
+    
+    Ok(pem_string)
 }
 
 #[wasm_bindgen(start)]

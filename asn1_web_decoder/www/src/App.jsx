@@ -5,7 +5,7 @@ import { Edit } from '@mui/icons-material'
 import InputDialog from './components/InputDialog'
 import OutputSection from './components/OutputSection'
 import HexViewSection from './components/HexViewSection'
-import init, { decode_pem_to_json, pem_to_hex } from './wasm/asn1_web_decoder.js'
+import init, { decode_pem_to_json, pem_to_hex, encode_tree_to_pem } from './wasm/asn1_web_decoder.js'
 import wasmUrl from './wasm/asn1_web_decoder_bg.wasm?url'
 
 const SAMPLE_CERT = `-----BEGIN CERTIFICATE-----
@@ -45,7 +45,9 @@ const theme = createTheme({
 
 function App() {
   const [input, setInput] = useState('')
+  const [originalPemLabel, setOriginalPemLabel] = useState('CERTIFICATE')
   const [decodedData, setDecodedData] = useState(null)
+  const [modifiedData, setModifiedData] = useState(null)
   const [hexData, setHexData] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -74,6 +76,7 @@ function App() {
     setError('')
     setLoading(true)
     setDecodedData(null)
+    setModifiedData(null)
     setHexData('')
     setDialogOpen(false)
 
@@ -81,7 +84,15 @@ function App() {
       const result = decode_pem_to_json(input)
       const hex = pem_to_hex(input)
       const data = JSON.parse(result)
+      
+      // Extract PEM label from input
+      const pemMatch = input.match(/-----BEGIN ([A-Z\s]+)-----/)
+      if (pemMatch) {
+        setOriginalPemLabel(pemMatch[1])
+      }
+      
       setDecodedData(data)
+      setModifiedData(JSON.parse(JSON.stringify(data))) // Deep copy
       setHexData(hex)
     } catch (e) {
       setError(e.toString())
@@ -94,6 +105,7 @@ function App() {
   const handleClear = () => {
     setInput('')
     setDecodedData(null)
+    setModifiedData(null)
     setHexData('')
     setError('')
     setHighlightRange({ start: null, end: null })
@@ -112,6 +124,46 @@ function App() {
       })
     } else {
       setHighlightRange({ start: null, end: null })
+    }
+  }
+
+  const handleValueEdit = (node, newValue) => {
+    // Update the modified data tree
+    const updateNodeValue = (treeNode) => {
+      if (treeNode === node) {
+        treeNode.value = newValue
+        return true
+      }
+      if (treeNode.children) {
+        for (const child of treeNode.children) {
+          if (updateNodeValue(child)) {
+            return true
+          }
+        }
+      }
+      return false
+    }
+
+    const updatedData = JSON.parse(JSON.stringify(modifiedData))
+    updateNodeValue(updatedData)
+    setModifiedData(updatedData)
+
+    // Encode the modified tree back to PEM
+    try {
+      const jsonTree = JSON.stringify(updatedData)
+      const newPem = encode_tree_to_pem(jsonTree, originalPemLabel)
+      
+      // Update the input with the new PEM
+      setInput(newPem)
+      
+      // Decode the new PEM to update hex view
+      const hex = pem_to_hex(newPem)
+      setHexData(hex)
+      
+      console.log('Successfully encoded modified ASN.1 to PEM')
+    } catch (e) {
+      console.error('Failed to encode ASN.1:', e)
+      setError(`Encoding failed: ${e.toString()}`)
     }
   }
 
@@ -164,6 +216,7 @@ function App() {
             decodedData={decodedData}
             loading={loading}
             onNodeHover={handleNodeHover}
+            onValueEdit={handleValueEdit}
           />
         </Box>
 
