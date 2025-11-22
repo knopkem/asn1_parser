@@ -127,10 +127,15 @@ function App() {
     }
   }
 
-  const handleValueEdit = (node, newValue) => {
-    // Update the modified data tree
+  const handleValueEdit = async (node, newValue) => {
+    console.log('handleValueEdit called', { node, newValue });
+    
+    // Update the modified data tree by matching byte_offset and label
     const updateNodeValue = (treeNode) => {
-      if (treeNode === node) {
+      if (treeNode.byte_offset === node.byte_offset && 
+          treeNode.label === node.label &&
+          treeNode.value !== undefined) {
+        console.log('Found node to update', treeNode);
         treeNode.value = newValue
         return true
       }
@@ -145,25 +150,43 @@ function App() {
     }
 
     const updatedData = JSON.parse(JSON.stringify(modifiedData))
-    updateNodeValue(updatedData)
-    setModifiedData(updatedData)
+    const found = updateNodeValue(updatedData)
+    
+    if (!found) {
+      console.error('Could not find node to update')
+      setError('Failed to locate node for editing')
+      return
+    }
+
+    console.log('Updated tree:', updatedData);
 
     // Encode the modified tree back to PEM
     try {
       const jsonTree = JSON.stringify(updatedData)
+      console.log('JSON tree for encoding:', jsonTree.substring(0, 200) + '...');
+      
       const newPem = encode_tree_to_pem(jsonTree, originalPemLabel)
+      console.log('Generated new PEM:', newPem.substring(0, 100) + '...');
       
-      // Update the input with the new PEM
-      setInput(newPem)
-      
-      // Decode the new PEM to update hex view
+      // Re-decode the new PEM to update everything
+      const result = decode_pem_to_json(newPem)
       const hex = pem_to_hex(newPem)
-      setHexData(hex)
+      const data = JSON.parse(result)
       
-      console.log('Successfully encoded modified ASN.1 to PEM')
+      console.log('Re-decoded data:', data);
+      console.log('New hex:', hex.substring(0, 100) + '...');
+      
+      // Update all states together
+      setInput(newPem)
+      setDecodedData(data)
+      setModifiedData(JSON.parse(JSON.stringify(data))) // Deep copy
+      setHexData(hex)
+      setError('')
+      
+      console.log('Successfully encoded and re-decoded modified ASN.1')
     } catch (e) {
-      console.error('Failed to encode ASN.1:', e)
-      setError(`Encoding failed: ${e.toString()}`)
+      console.error('Failed to encode/decode ASN.1:', e)
+      setError(`Encoding/decoding failed: ${e.toString()}`)
     }
   }
 

@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useRef, memo } from 'react'
 import { Box, IconButton, Typography, Snackbar, TextField } from '@mui/material'
 import { ExpandMore, ChevronRight, ContentCopy, Edit, Check, Close } from '@mui/icons-material'
 
-function TreeNode({ node, onNodeHover, onValueEdit }) {
+const TreeNode = memo(function TreeNode({ node, onNodeHover, onValueEdit }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
+  const editingNodeRef = useRef(null)
   const hasChildren = node.children && node.children.length > 0
 
   const toggleCollapse = (e) => {
@@ -28,26 +29,41 @@ function TreeNode({ node, onNodeHover, onValueEdit }) {
 
   const handleStartEdit = (e) => {
     e.stopPropagation()
+    const nodeKey = `${node.byte_offset}_${node.label}`
+    editingNodeRef.current = nodeKey
     setEditValue(node.value || '')
     setIsEditing(true)
   }
 
-  const handleSaveEdit = (e) => {
+  const handleSaveEdit = async (e) => {
     e.stopPropagation()
-    if (onValueEdit) {
-      onValueEdit(node, editValue)
-    }
     setIsEditing(false)
+    editingNodeRef.current = null
+    if (onValueEdit) {
+      await onValueEdit(node, editValue)
+    }
   }
 
   const handleCancelEdit = (e) => {
     e.stopPropagation()
     setIsEditing(false)
     setEditValue('')
+    editingNodeRef.current = null
   }
 
   const handleEditChange = (e) => {
+    e.stopPropagation()
     setEditValue(e.target.value)
+  }
+
+  const handleEditKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSaveEdit(e)
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelEdit(e)
+    }
   }
 
   const handleCloseSnackbar = () => {
@@ -199,7 +215,9 @@ function TreeNode({ node, onNodeHover, onValueEdit }) {
             <TextField
               value={editValue}
               onChange={handleEditChange}
+              onKeyDown={handleEditKeyDown}
               onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               size="small"
               variant="outlined"
               sx={{
@@ -218,6 +236,11 @@ function TreeNode({ node, onNodeHover, onValueEdit }) {
                 }
               }}
               autoFocus
+              slotProps={{
+                input: {
+                  autoComplete: 'off'
+                }
+              }}
             />
             <IconButton
               size="small"
@@ -233,7 +256,7 @@ function TreeNode({ node, onNodeHover, onValueEdit }) {
                   bgcolor: 'rgba(46, 125, 50, 0.1)'
                 }
               }}
-              title="Save changes"
+              title="Save changes (Enter)"
             >
               <Check sx={{ fontSize: '0.75rem' }} />
             </IconButton>
@@ -251,7 +274,7 @@ function TreeNode({ node, onNodeHover, onValueEdit }) {
                   bgcolor: 'rgba(211, 47, 47, 0.1)'
                 }
               }}
-              title="Cancel editing"
+              title="Cancel editing (Escape)"
             >
               <Close sx={{ fontSize: '0.75rem' }} />
             </IconButton>
@@ -266,7 +289,12 @@ function TreeNode({ node, onNodeHover, onValueEdit }) {
           borderLeft: '1px solid #ddd'
         }}>
           {node.children.map((child, index) => (
-            <TreeNode key={index} node={child} onNodeHover={onNodeHover} onValueEdit={onValueEdit} />
+            <TreeNode 
+              key={`${child.byte_offset}_${child.label}_${index}`} 
+              node={child} 
+              onNodeHover={onNodeHover} 
+              onValueEdit={onValueEdit} 
+            />
           ))}
         </Box>
       )}
@@ -280,6 +308,6 @@ function TreeNode({ node, onNodeHover, onValueEdit }) {
       />
     </Box>
   )
-}
+})
 
 export default TreeNode
