@@ -39,7 +39,7 @@ const HexView = memo(({ hexData, highlightStart, highlightEnd }) => {
   }
 
   // Format hex data into groups of 2 characters (1 byte)
-  const bytes = hexData.match(/.{1,2}/g) || []
+  const bytes = hexData.toUpperCase().match(/.{1,2}/g) || []
   
   // Group into 16 bytes per row
   const rows = []
@@ -71,14 +71,14 @@ const HexView = memo(({ hexData, highlightStart, highlightEnd }) => {
     if (lengthByte < 0x80) {
       // Short form: length is in this one byte
       if (byteIndex === highlightStart + 1) {
-        return '#388e3c' // Green for length
+        return '#2e7d32' // Darker green for length
       }
     } else {
       // Long form: 0x80 + number of length bytes
       const numLengthBytes = lengthByte & 0x7f
       // Length bytes are from highlightStart + 1 to highlightStart + 1 + numLengthBytes
       if (byteIndex >= highlightStart + 1 && byteIndex <= highlightStart + 1 + numLengthBytes) {
-        return '#388e3c' // Green for length bytes
+        return '#2e7d32' // Darker green for length bytes
       }
     }
     
@@ -96,8 +96,8 @@ const HexView = memo(({ hexData, highlightStart, highlightEnd }) => {
       ref={containerRef}
       sx={{ 
         fontFamily: '"Courier New", monospace',
-        fontSize: '0.65rem',
-        lineHeight: 1.6,
+        fontSize: '0.6rem',
+        lineHeight: 1.3,
         whiteSpace: 'pre'
       }}
     >
@@ -125,18 +125,21 @@ const HexView = memo(({ hexData, highlightStart, highlightEnd }) => {
                 color: 'text.secondary',
                 minWidth: '60px',
                 userSelect: 'none',
-                fontSize: 'inherit'
+                fontSize: 'inherit',
+                textTransform: 'uppercase'
               }}
             >
               {row.offset.toString(16).padStart(6, '0')}:
             </Typography>
 
             {/* Hex bytes */}
-            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
               {row.bytes.map((byte, idx) => {
                 const byteIndex = row.offset + idx
                 const highlighted = isHighlighted(byteIndex)
                 const byteColor = getByteColor(byteIndex, bytes)
+                const prevHighlighted = idx > 0 && isHighlighted(row.offset + idx - 1)
+                const nextHighlighted = idx < row.bytes.length - 1 && isHighlighted(row.offset + idx + 1)
                 
                 return (
                   <Typography
@@ -145,14 +148,29 @@ const HexView = memo(({ hexData, highlightStart, highlightEnd }) => {
                     sx={{
                       display: 'inline-block',
                       padding: '1px 2px',
-                      borderRadius: '2px',
-                      transition: 'all 0.2s',
-                      bgcolor: highlighted ? 'primary.main' : 'transparent',
+                      position: 'relative',
+                      minWidth: '14px',
+                      textAlign: 'center',
+                      fontFamily: '"Courier New", monospace',
+                      fontVariantNumeric: 'tabular-nums',
+                      borderTopLeftRadius: highlighted && !prevHighlighted ? '3px' : 0,
+                      borderBottomLeftRadius: highlighted && !prevHighlighted ? '3px' : 0,
+                      borderTopRightRadius: highlighted && !nextHighlighted ? '3px' : 0,
+                      borderBottomRightRadius: highlighted && !nextHighlighted ? '3px' : 0,
+                      bgcolor: highlighted ? 'rgba(102, 126, 234, 0.5)' : 'transparent',
                       color: highlighted ? byteColor : 'text.primary',
                       fontWeight: highlighted ? 600 : 400,
-                      transform: highlighted ? 'scale(1.05)' : 'scale(1)',
-                      boxShadow: highlighted ? '0 2px 4px rgba(102, 126, 234, 0.3)' : 'none',
-                      fontSize: 'inherit'
+                      fontSize: 'inherit',
+                      '&::after': highlighted && nextHighlighted ? {
+                        content: '""',
+                        position: 'absolute',
+                        right: '-4px',
+                        top: 0,
+                        bottom: 0,
+                        width: '4px',
+                        bgcolor: 'rgba(102, 126, 234, 0.5)',
+                        zIndex: 0
+                      } : {}
                     }}
                   >
                     {byte}

@@ -7,7 +7,9 @@ function OutputSection({ decodedData, loading, onNodeHover }) {
       display: 'flex', 
       flexDirection: 'column',
       height: '100%',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      flexGrow: 1,
+      minWidth: 0
     }}>
       <Typography variant="h6" component="h2" fontWeight="bold" color="primary" sx={{ mb: 1 }}>
         Decoded Structure

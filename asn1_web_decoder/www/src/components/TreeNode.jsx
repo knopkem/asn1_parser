@@ -23,15 +23,33 @@ function TreeNode({ node, onNodeHover }) {
     }
   }
 
+  // Get color for tag class
+  const getTagClassColor = (tagClass) => {
+    switch (tagClass) {
+      case 'UNIVERSAL':
+        return '#1976d2' // Blue
+      case 'APPLICATION':
+        return '#d32f2f' // Red
+      case 'CONTEXT':
+        return '#388e3c' // Green
+      case 'PRIVATE':
+        return '#f57c00' // Orange
+      case 'PEM':
+        return '#7b1fa2' // Purple
+      default:
+        return '#616161' // Gray
+    }
+  }
+
   return (
-    <Box sx={{ my: 0.5, fontFamily: '"Courier New", monospace' }}>
+    <Box sx={{ my: 0.2, fontFamily: '"Courier New", monospace' }}>
       <Box 
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         sx={{ 
           display: 'flex',
           alignItems: 'center',
-          py: 0.5,
+          py: 0.25,
           px: 1,
           borderRadius: 1,
           cursor: 'pointer',
@@ -46,12 +64,12 @@ function TreeNode({ node, onNodeHover }) {
           <IconButton 
             size="small" 
             onClick={toggleCollapse}
-            sx={{ p: 0, mr: 0.5, width: 20, height: 20 }}
+            sx={{ p: 0, mr: 0.5, width: 16, height: 16 }}
           >
-            {isCollapsed ? <ChevronRight sx={{ fontSize: 16 }} /> : <ExpandMore sx={{ fontSize: 16 }} />}
+            {isCollapsed ? <ChevronRight sx={{ fontSize: 14 }} /> : <ExpandMore sx={{ fontSize: 14 }} />}
           </IconButton>
         ) : (
-          <Box sx={{ width: 28 }} />
+          <Box sx={{ width: 24 }} />
         )}
 
         <Typography 
@@ -59,8 +77,9 @@ function TreeNode({ node, onNodeHover }) {
           sx={{ 
             fontWeight: 600, 
             mr: 1,
-            fontSize: '0.75rem',
-            lineHeight: 1.4
+            fontSize: '0.65rem',
+            lineHeight: 1.2,
+            color: getTagClassColor(node.tag_class)
           }}
         >
           {node.label.replace(/\s*\(Tag \d+\)/, '')}
@@ -70,23 +89,12 @@ function TreeNode({ node, onNodeHover }) {
           component="span" 
           sx={{ 
             color: 'text.secondary', 
-            fontSize: '0.7rem',
-            mr: 1,
-            fontFamily: 'inherit'
+            fontSize: '0.6rem',
+            fontFamily: 'inherit',
+            lineHeight: 1.2
           }}
         >
-          @{node.byte_offset?.toString(16).padStart(4, '0') || '0000'}
-        </Typography>
-
-        <Typography 
-          component="span" 
-          sx={{ 
-            color: 'text.secondary', 
-            fontSize: '0.7rem',
-            fontFamily: 'inherit'
-          }}
-        >
-          [{node.length}B]
+          (O: {node.byte_offset?.toString(16).padStart(4, '0') || '0000'}, L: {node.length})
         </Typography>
 
         {node.value && (
@@ -94,12 +102,13 @@ function TreeNode({ node, onNodeHover }) {
             component="span" 
             sx={{ 
               color: '#0066cc', 
-              fontSize: '0.7rem',
+              fontSize: '0.6rem',
               ml: 1,
               fontFamily: 'inherit',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              lineHeight: 1.2
             }}
           >
             = {node.value}
@@ -109,7 +118,7 @@ function TreeNode({ node, onNodeHover }) {
 
       {hasChildren && !isCollapsed && (
         <Box sx={{ 
-          ml: 3,
+          ml: 2.5,
           pl: 1,
           borderLeft: '1px solid #ddd'
         }}>

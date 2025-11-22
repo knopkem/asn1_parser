@@ -147,8 +147,7 @@ function App() {
         {/* Main Content */}
         <Box sx={{ 
           flexGrow: 1,
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', md: '1fr 2fr' },
+          display: 'flex',
           gap: 2,
           p: 2,
           overflow: 'hidden',

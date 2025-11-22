@@ -7,7 +7,10 @@ function HexViewSection({ hexData, loading, highlightStart, highlightEnd }) {
       display: 'flex', 
       flexDirection: 'column',
       height: '100%',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      flexShrink: 0,
+      width: 'auto',
+      maxWidth: 'max-content'
     }}>
       <Typography variant="h6" component="h2" fontWeight="bold" color="secondary" sx={{ mb: 1 }}>
         Hex View
