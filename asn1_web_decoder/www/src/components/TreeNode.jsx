@@ -65,7 +65,7 @@ function TreeNode({ node, onNodeHover }) {
         onMouseLeave={handleMouseLeave}
         sx={{ 
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           py: 0.25,
           px: 1,
           borderRadius: 1,
@@ -115,18 +115,18 @@ function TreeNode({ node, onNodeHover }) {
         </Typography>
 
         {node.value && (
-          <>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', ml: 1, flex: 1, minWidth: 0 }}>
             <Typography 
               component="span" 
               sx={{ 
                 color: '#0066cc', 
                 fontSize: '0.6rem',
-                ml: 1,
                 fontFamily: 'inherit',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                lineHeight: 1.2
+                lineHeight: 1.2,
+                wordBreak: 'break-all',
+                whiteSpace: 'normal',
+                flex: 1,
+                minWidth: 0
               }}
             >
               = {node.value}
@@ -138,6 +138,7 @@ function TreeNode({ node, onNodeHover }) {
                 ml: 0.5,
                 p: 0.25,
                 opacity: 0.6,
+                flexShrink: 0,
                 '&:hover': {
                   opacity: 1,
                   bgcolor: 'rgba(0, 102, 204, 0.1)'
@@ -147,7 +148,7 @@ function TreeNode({ node, onNodeHover }) {
             >
               <ContentCopy sx={{ fontSize: '0.75rem' }} />
             </IconButton>
-          </>
+          </Box>
         )}
       </Box>
 

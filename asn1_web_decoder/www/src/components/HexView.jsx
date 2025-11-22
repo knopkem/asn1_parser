@@ -124,7 +124,8 @@ const HexView = memo(({ hexData, highlightStart, highlightEnd, scrollContainerRe
                 minWidth: '60px',
                 userSelect: 'none',
                 fontSize: 'inherit',
-                textTransform: 'uppercase'
+                textTransform: 'uppercase',
+                fontWeight: rowHasHighlight ? 700 : 400
               }}
             >
               {row.offset.toString(16).padStart(6, '0')}:
