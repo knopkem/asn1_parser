@@ -1,14 +1,31 @@
 import { useState } from 'react'
-import { Box, IconButton, Typography } from '@mui/material'
-import { ExpandMore, ChevronRight } from '@mui/icons-material'
+import { Box, IconButton, Typography, Snackbar } from '@mui/material'
+import { ExpandMore, ChevronRight, ContentCopy } from '@mui/icons-material'
 
 function TreeNode({ node, onNodeHover }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [copySuccess, setCopySuccess] = useState(false)
   const hasChildren = node.children && node.children.length > 0
 
   const toggleCollapse = (e) => {
     e.stopPropagation()
     setIsCollapsed(!isCollapsed)
+  }
+
+  const handleCopyValue = async (e) => {
+    e.stopPropagation()
+    if (node.value) {
+      try {
+        await navigator.clipboard.writeText(node.value)
+        setCopySuccess(true)
+      } catch (err) {
+        console.error('Failed to copy:', err)
+      }
+    }
+  }
+
+  const handleCloseSnackbar = () => {
+    setCopySuccess(false)
   }
 
   const handleMouseEnter = () => {
@@ -98,21 +115,39 @@ function TreeNode({ node, onNodeHover }) {
         </Typography>
 
         {node.value && (
-          <Typography 
-            component="span" 
-            sx={{ 
-              color: '#0066cc', 
-              fontSize: '0.6rem',
-              ml: 1,
-              fontFamily: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              lineHeight: 1.2
-            }}
-          >
-            = {node.value}
-          </Typography>
+          <>
+            <Typography 
+              component="span" 
+              sx={{ 
+                color: '#0066cc', 
+                fontSize: '0.6rem',
+                ml: 1,
+                fontFamily: 'inherit',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                lineHeight: 1.2
+              }}
+            >
+              = {node.value}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={handleCopyValue}
+              sx={{
+                ml: 0.5,
+                p: 0.25,
+                opacity: 0.6,
+                '&:hover': {
+                  opacity: 1,
+                  bgcolor: 'rgba(0, 102, 204, 0.1)'
+                }
+              }}
+              title="Copy value to clipboard"
+            >
+              <ContentCopy sx={{ fontSize: '0.75rem' }} />
+            </IconButton>
+          </>
         )}
       </Box>
 
@@ -127,6 +162,14 @@ function TreeNode({ node, onNodeHover }) {
           ))}
         </Box>
       )}
+
+      <Snackbar
+        open={copySuccess}
+        autoHideDuration={2000}
+        onClose={handleCloseSnackbar}
+        message="Value copied to clipboard"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   )
 }
