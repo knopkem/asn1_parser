@@ -233,11 +233,8 @@ fn decode_bit_string(data: &[u8]) -> String {
         return "Empty".to_string();
     }
     let unused_bits = data[0];
-    if data.len() <= 17 {
-        format!("{} unused bits, data: {}", unused_bits, hex_string(&data[1..]))
-    } else {
-        format!("{} unused bits, {} bytes", unused_bits, data.len() - 1)
-    }
+    // Always show the hex data for BIT STRINGs
+    format!("{} unused bits, data: {}", unused_bits, hex_string(&data[1..]))
 }
 
 fn decode_octet_string(data: &[u8]) -> String {
