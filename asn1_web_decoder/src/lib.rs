@@ -120,6 +120,11 @@ fn decode_der_recursive(data: &[u8], nodes: &mut Vec<Asn1Node>, base_offset: usi
             node.value = Some(decode_value(tag_number, content));
         }
         
+        // For BIT STRING, also show value even if constructed
+        if tag_number == 3 && node.value.is_none() {
+            node.value = Some(decode_bit_string(content));
+        }
+        
         nodes.push(node);
         pos += length;
     }
@@ -273,4 +278,67 @@ fn hex_string(data: &[u8]) -> String {
 pub fn main() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bit_string_value_primitive() {
+        // Test a primitive BIT STRING
+        // DER encoding: 03 04 06 6e 5d c0
+        // Tag: 03 (BIT STRING)
+        // Length: 04
+        // Content: 06 6e 5d c0 (06 = unused bits, rest is data)
+        let pem_str = "-----BEGIN TEST-----\nAwQGbl3A\n-----END TEST-----";
+        
+        let result = decode_pem_internal(pem_str);
+        
+        assert!(result.is_ok(), "Failed to decode PEM: {:?}", result.err());
+        let json = result.unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        
+        // Navigate to the BIT STRING node
+        let bit_string = &parsed["children"][0];
+        assert_eq!(bit_string["label"].as_str().unwrap(), "BIT STRING (Tag 3)");
+        
+        // Check that value is present
+        let value = bit_string["value"].as_str();
+        assert!(value.is_some(), "BIT STRING value should be present");
+        assert!(value.unwrap().contains("unused bits"), "Value should mention unused bits");
+    }
+
+    #[test]
+    fn test_bit_string_value_constructed() {
+        // Test a constructed BIT STRING (which might contain nested structures)
+        // Tag: 23 (0x03 with constructed bit set = 0x23)
+        // DER: 23 08 03 03 00 ab cd 03 02 00 ef
+        // Base64: IwgDAwCrzQMCAO8=
+        let pem_str = "-----BEGIN TEST-----\nIwgDAwCrzQMCAO8=\n-----END TEST-----";
+        
+        let result = decode_pem_internal(pem_str);
+        
+        assert!(result.is_ok(), "Failed to decode PEM: {:?}", result.err());
+        let json = result.unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        
+        // Navigate to the constructed BIT STRING node
+        let bit_string = &parsed["children"][0];
+        
+        // Check that value is present even for constructed BIT STRING
+        let value = bit_string["value"].as_str();
+        assert!(value.is_some(), "Constructed BIT STRING should also have a value");
+        println!("Constructed BIT STRING value: {:?}", value);
+    }
+
+    #[test]
+    fn test_decode_bit_string_function() {
+        // Test the decode_bit_string function directly
+        let data = vec![0x00, 0x30, 0x82, 0x01, 0x22];  // 0 unused bits, then data
+        let result = decode_bit_string(&data);
+        
+        assert!(result.contains("0 unused bits"));
+        assert!(result.to_lowercase().contains("30820122"));
+    }
 }
