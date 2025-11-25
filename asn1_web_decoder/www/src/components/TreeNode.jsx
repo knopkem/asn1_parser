@@ -1,14 +1,45 @@
 import { useState, useRef, memo } from 'react'
-import { Box, IconButton, Typography, Snackbar, TextField } from '@mui/material'
-import { ExpandMore, ChevronRight, ContentCopy, Edit, Check, Close } from '@mui/icons-material'
+import { Box, IconButton, Typography, Snackbar, TextField, Menu, MenuItem } from '@mui/material'
+import { ExpandMore, ChevronRight, ContentCopy, Edit, Check, Close, Add, Remove } from '@mui/icons-material'
 
-const TreeNode = memo(function TreeNode({ node, onNodeHover, onValueEdit }) {
+const TreeNode = memo(function TreeNode({ node, onNodeHover, onValueEdit, onNodeDelete, onNodeAdd }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
+  const [anchorEl, setAnchorEl] = useState(null)
   const editingNodeRef = useRef(null)
   const hasChildren = node.children && node.children.length > 0
+
+  const allNodeTypes = {
+    container: [
+      { label: 'SEQUENCE', tag: 16, constructed: true, tagClass: 'UNIVERSAL' },
+      { label: 'SET', tag: 17, constructed: true, tagClass: 'UNIVERSAL' },
+      { label: 'CONTEXT 0', tag: 0, constructed: true, tagClass: 'CONTEXT' },
+      { label: 'CONTEXT 1', tag: 1, constructed: true, tagClass: 'CONTEXT' },
+      { label: 'CONTEXT 2', tag: 2, constructed: true, tagClass: 'CONTEXT' },
+      { label: 'CONTEXT 3', tag: 3, constructed: true, tagClass: 'CONTEXT' },
+    ],
+    primitive: [
+      { label: 'INTEGER', tag: 2, constructed: false, tagClass: 'UNIVERSAL', defaultValue: '0' },
+      { label: 'OCTET STRING', tag: 4, constructed: false, tagClass: 'UNIVERSAL', defaultValue: '00' },
+      { label: 'BIT STRING', tag: 3, constructed: false, tagClass: 'UNIVERSAL', defaultValue: '00000000 (unused bits: 0)' },
+      { label: 'UTF8String', tag: 12, constructed: false, tagClass: 'UNIVERSAL', defaultValue: 'text' },
+      { label: 'PrintableString', tag: 19, constructed: false, tagClass: 'UNIVERSAL', defaultValue: 'text' },
+      { label: 'IA5String', tag: 22, constructed: false, tagClass: 'UNIVERSAL', defaultValue: 'text' },
+      { label: 'OBJECT IDENTIFIER', tag: 6, constructed: false, tagClass: 'UNIVERSAL', defaultValue: '1.2.3.4' },
+      { label: 'NULL', tag: 5, constructed: false, tagClass: 'UNIVERSAL', defaultValue: 'NULL' },
+      { label: 'BOOLEAN', tag: 1, constructed: false, tagClass: 'UNIVERSAL', defaultValue: 'true' },
+      { label: 'UTCTime', tag: 23, constructed: false, tagClass: 'UNIVERSAL', defaultValue: '250101000000Z' },
+      { label: 'GeneralizedTime', tag: 24, constructed: false, tagClass: 'UNIVERSAL', defaultValue: '20250101000000Z' },
+    ]
+  }
+
+  // Determine which types to show based on whether current node is constructed
+  const isConstructed = node.is_constructed || hasChildren
+  const availableTypes = isConstructed 
+    ? [...allNodeTypes.container, ...allNodeTypes.primitive]
+    : allNodeTypes.container
 
   const toggleCollapse = (e) => {
     e.stopPropagation()
@@ -79,6 +110,29 @@ const TreeNode = memo(function TreeNode({ node, onNodeHover, onValueEdit }) {
   const handleMouseLeave = () => {
     if (onNodeHover) {
       onNodeHover(null)
+    }
+  }
+
+  const handleDeleteNode = (e) => {
+    e.stopPropagation()
+    if (onNodeDelete) {
+      onNodeDelete(node)
+    }
+  }
+
+  const handleAddNode = (e) => {
+    e.stopPropagation()
+    setAnchorEl(e.currentTarget)
+  }
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null)
+  }
+
+  const handleSelectNodeType = (nodeType) => {
+    setAnchorEl(null)
+    if (onNodeAdd) {
+      onNodeAdd(node, nodeType)
     }
   }
 
@@ -153,8 +207,50 @@ const TreeNode = memo(function TreeNode({ node, onNodeHover, onValueEdit }) {
             lineHeight: 1.2
           }}
         >
-          (O: {node.byte_offset?.toString(16).padStart(4, '0') || '0000'}, L: {node.length})
+          (O: {node.byte_offset?.toString(16).padStart(4, '0').toUpperCase() || '0000'}, L: {node.length})
         </Typography>
+
+        {/* Action buttons for constructed types (SEQUENCE, SET, etc.) */}
+        {isConstructed && !node.value && (
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+            <IconButton
+              size="small"
+              onClick={handleAddNode}
+              sx={{
+                ml: 0.25,
+                p: 0.25,
+                opacity: 0.6,
+                flexShrink: 0,
+                color: 'success.main',
+                '&:hover': {
+                  opacity: 1,
+                  bgcolor: 'rgba(46, 125, 50, 0.1)'
+                }
+              }}
+              title="Add child node"
+            >
+              <Add sx={{ fontSize: '0.75rem' }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={handleDeleteNode}
+              sx={{
+                ml: 0.25,
+                p: 0.25,
+                opacity: 0.6,
+                flexShrink: 0,
+                color: 'error.main',
+                '&:hover': {
+                  opacity: 1,
+                  bgcolor: 'rgba(211, 47, 47, 0.1)'
+                }
+              }}
+              title="Delete node"
+            >
+              <Remove sx={{ fontSize: '0.75rem' }} />
+            </IconButton>
+          </Box>
+        )}
 
         {node.value && !isEditing && (
           <Box sx={{ display: 'flex', alignItems: 'flex-start', ml: 1, flex: 1, minWidth: 0 }}>
@@ -206,6 +302,24 @@ const TreeNode = memo(function TreeNode({ node, onNodeHover, onValueEdit }) {
               title="Edit value"
             >
               <Edit sx={{ fontSize: '0.75rem' }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={handleDeleteNode}
+              sx={{
+                ml: 0.25,
+                p: 0.25,
+                opacity: 0.6,
+                flexShrink: 0,
+                color: 'error.main',
+                '&:hover': {
+                  opacity: 1,
+                  bgcolor: 'rgba(211, 47, 47, 0.1)'
+                }
+              }}
+              title="Delete node"
+            >
+              <Remove sx={{ fontSize: '0.75rem' }} />
             </IconButton>
           </Box>
         )}
@@ -293,11 +407,29 @@ const TreeNode = memo(function TreeNode({ node, onNodeHover, onValueEdit }) {
               key={`${child.byte_offset}_${child.label}_${index}`} 
               node={child} 
               onNodeHover={onNodeHover} 
-              onValueEdit={onValueEdit} 
+              onValueEdit={onValueEdit}
+              onNodeDelete={onNodeDelete}
+              onNodeAdd={onNodeAdd}
             />
           ))}
         </Box>
       )}
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+      >
+        {availableTypes.map((type) => (
+          <MenuItem 
+            key={`${type.label}_${type.tag}_${type.tagClass}`} 
+            onClick={() => handleSelectNodeType(type)}
+            sx={{ fontSize: '0.85rem' }}
+          >
+            {type.label}
+          </MenuItem>
+        ))}
+      </Menu>
 
       <Snackbar
         open={copySuccess}

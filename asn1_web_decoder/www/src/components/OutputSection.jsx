@@ -1,7 +1,7 @@
 import { Box, Typography, Paper, CircularProgress } from '@mui/material'
 import TreeNode from './TreeNode'
 
-function OutputSection({ decodedData, loading, onNodeHover, onValueEdit }) {
+function OutputSection({ decodedData, loading, onNodeHover, onValueEdit, onNodeDelete, onNodeAdd }) {
   return (
     <Box sx={{ 
       display: 'flex', 
@@ -45,7 +45,13 @@ function OutputSection({ decodedData, loading, onNodeHover, onValueEdit }) {
         
         {!loading && decodedData && (
           <Box>
-            <TreeNode node={decodedData} onNodeHover={onNodeHover} onValueEdit={onValueEdit} />
+            <TreeNode 
+              node={decodedData} 
+              onNodeHover={onNodeHover} 
+              onValueEdit={onValueEdit}
+              onNodeDelete={onNodeDelete}
+              onNodeAdd={onNodeAdd}
+            />
           </Box>
         )}
       </Paper>

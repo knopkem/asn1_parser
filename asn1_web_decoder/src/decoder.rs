@@ -277,7 +277,49 @@ fn decode_oid(data: &[u8]) -> String {
         oid.push_str(&format!(".{}", value));
     }
     
-    oid
+    // Add human-readable name if known
+    if let Some(name) = get_oid_name(&oid) {
+        format!("{} ({})", oid, name)
+    } else {
+        oid
+    }
+}
+
+fn get_oid_name(oid: &str) -> Option<&'static str> {
+    match oid {
+        // Common algorithm OIDs
+        "1.2.840.113549.1.1.1" => Some("RSA Encryption"),
+        "1.2.840.113549.1.1.5" => Some("SHA-1 with RSA"),
+        "1.2.840.113549.1.1.11" => Some("SHA-256 with RSA"),
+        "1.2.840.113549.1.1.12" => Some("SHA-384 with RSA"),
+        "1.2.840.113549.1.1.13" => Some("SHA-512 with RSA"),
+        "1.2.840.10045.4.3.2" => Some("ECDSA with SHA-256"),
+        "1.2.840.10045.4.3.3" => Some("ECDSA with SHA-384"),
+        "1.2.840.10045.4.3.4" => Some("ECDSA with SHA-512"),
+        
+        // X.509 certificate extension OIDs
+        "2.5.29.14" => Some("Subject Key Identifier"),
+        "2.5.29.15" => Some("Key Usage"),
+        "2.5.29.17" => Some("Subject Alternative Name"),
+        "2.5.29.19" => Some("Basic Constraints"),
+        "2.5.29.31" => Some("CRL Distribution Points"),
+        "2.5.29.32" => Some("Certificate Policies"),
+        "2.5.29.35" => Some("Authority Key Identifier"),
+        "2.5.29.37" => Some("Extended Key Usage"),
+        
+        // X.500 attribute types
+        "2.5.4.3" => Some("Common Name"),
+        "2.5.4.6" => Some("Country"),
+        "2.5.4.7" => Some("Locality"),
+        "2.5.4.8" => Some("State or Province"),
+        "2.5.4.10" => Some("Organization"),
+        "2.5.4.11" => Some("Organizational Unit"),
+        
+        // PKCS OIDs
+        "1.2.840.113549.1.9.1" => Some("Email Address"),
+        
+        _ => None,
+    }
 }
 
 fn decode_relative_oid(data: &[u8]) -> String {

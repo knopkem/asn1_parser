@@ -161,38 +161,109 @@ function App() {
     console.log('Updated tree:', updatedData);
 
     // Encode the modified tree back to PEM
+    await reencodeTree(updatedData)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      handleDecode()
+    }
+  }
+
+  const handleNodeDelete = async (nodeToDelete) => {
+    const deleteNode = (treeNode, parent = null, index = -1) => {
+      if (treeNode.byte_offset === nodeToDelete.byte_offset && 
+          treeNode.label === nodeToDelete.label) {
+        if (parent && index >= 0) {
+          parent.children.splice(index, 1)
+          return true
+        }
+        return false // Can't delete root
+      }
+      if (treeNode.children) {
+        for (let i = 0; i < treeNode.children.length; i++) {
+          if (deleteNode(treeNode.children[i], treeNode, i)) {
+            return true
+          }
+        }
+      }
+      return false
+    }
+
+    const updatedData = JSON.parse(JSON.stringify(modifiedData))
+    const deleted = deleteNode(updatedData)
+    
+    if (!deleted) {
+      console.error('Could not delete node')
+      return
+    }
+
+    await reencodeTree(updatedData)
+  }
+
+  const handleNodeAdd = async (parentNode, nodeType) => {
+    const newNode = {
+      label: nodeType.label,
+      tag: nodeType.tag,
+      tag_class: nodeType.tagClass,
+      tag_number: nodeType.tag,
+      is_constructed: nodeType.constructed,
+      length: 0,
+      value: nodeType.defaultValue || null,
+      children: nodeType.constructed ? [] : undefined,
+      byte_offset: 0,
+      byte_length: 0
+    }
+
+    const addNode = (treeNode) => {
+      if (treeNode.byte_offset === parentNode.byte_offset && 
+          treeNode.label === parentNode.label) {
+        if (!treeNode.children) {
+          treeNode.children = []
+        }
+        treeNode.children.push(newNode)
+        return true
+      }
+      if (treeNode.children) {
+        for (const child of treeNode.children) {
+          if (addNode(child)) {
+            return true
+          }
+        }
+      }
+      return false
+    }
+
+    const updatedData = JSON.parse(JSON.stringify(modifiedData))
+    const added = addNode(updatedData)
+    
+    if (!added) {
+      console.error('Could not add node')
+      return
+    }
+
+    await reencodeTree(updatedData)
+  }
+
+  const reencodeTree = async (updatedData) => {
     try {
       const jsonTree = JSON.stringify(updatedData)
-      console.log('JSON tree for encoding:', jsonTree.substring(0, 200) + '...');
-      
       const newPem = encode_asn1_to_pem(jsonTree, originalPemLabel)
-      console.log('Generated new PEM:', newPem.substring(0, 100) + '...');
       
       // Re-decode the new PEM to update everything
       const result = decode_pem_to_json(newPem)
       const hex = pem_to_hex(newPem)
       const data = JSON.parse(result)
       
-      console.log('Re-decoded data:', data);
-      console.log('New hex:', hex.substring(0, 100) + '...');
-      
       // Update all states together
       setInput(newPem)
       setDecodedData(data)
-      setModifiedData(JSON.parse(JSON.stringify(data))) // Deep copy
+      setModifiedData(JSON.parse(JSON.stringify(data)))
       setHexData(hex)
       setError('')
-      
-      console.log('Successfully encoded and re-decoded modified ASN.1')
     } catch (e) {
       console.error('Failed to encode/decode ASN.1:', e)
       setError(`Encoding/decoding failed: ${e.toString()}`)
-    }
-  }
-
-  const handleKeyDown = (e) => {
-    if (e.ctrlKey && e.key === 'Enter') {
-      handleDecode()
     }
   }
 
@@ -240,6 +311,8 @@ function App() {
             loading={loading}
             onNodeHover={handleNodeHover}
             onValueEdit={handleValueEdit}
+            onNodeDelete={handleNodeDelete}
+            onNodeAdd={handleNodeAdd}
           />
         </Box>
 

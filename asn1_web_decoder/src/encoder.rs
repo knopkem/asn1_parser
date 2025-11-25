@@ -274,8 +274,15 @@ fn encode_null(_value: &str) -> Result<Vec<u8>, EncodeError> {
 }
 
 fn encode_object_identifier(value: &str) -> Result<Vec<u8>, EncodeError> {
-    // Expected format: "1.2.840.113549.1.1.11" or similar
-    let parts: Vec<&str> = value.split('.').collect();
+    // Expected format: "1.2.840.113549.1.1.11" or "1.2.840.113549.1.1.11 (SHA-256 with RSA)"
+    // Strip the human-readable name if present
+    let oid_str = if let Some(paren_pos) = value.find(" (") {
+        value[..paren_pos].trim()
+    } else {
+        value.trim()
+    };
+    
+    let parts: Vec<&str> = oid_str.split('.').collect();
     if parts.len() < 2 {
         return Err(EncodeError::InvalidValue("OID must have at least 2 components".to_string()));
     }
